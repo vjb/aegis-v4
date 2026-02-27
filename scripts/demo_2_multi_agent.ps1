@@ -355,14 +355,14 @@ Write-Host "  AGENT    TOKEN            RISK CODE  CAUGHT BY                   R
 Write-Host "  -------  ---------------  ---------  --------------------------  ------" -ForegroundColor DarkGray
 Write-Host "  NOVA     BRETT              0 (clean) GoPlus + GPT-4o + Llama-3  OK  Swap executed" -ForegroundColor Green
 Write-Host "  CIPHER   TaxToken          16+2 = 18  GoPlus + GPT-4o + Llama-3  BLOCKED: obfuscated 99% tax" -ForegroundColor Red
-Write-Host "  REX      HoneypotCoin     4+256 = 260  GoPlus + GPT-4o + Llama-3  BLOCKED: transfer allowlist honeypot" -ForegroundColor Red
-Write-Host "  REX      (bypass attempt)  n/a          Contract enforcement        REVERT: TokenNotCleared" -ForegroundColor Red
-Write-Host "  REX      (post-revoke)     n/a          Kill switch                 REVERT: NotAuthorized" -ForegroundColor Red
+Write-Host "  REX      HoneypotCoin       4+32 = 36  GoPlus + GPT-4o + Llama-3  BLOCKED: honeypot (GoPlus) + privilege escalation (AI)" -ForegroundColor Red
+Write-Host "  REX      (bypass attempt)   n/a         Contract enforcement        REVERT: TokenNotCleared" -ForegroundColor Red
+Write-Host "  REX      (post-revoke)      n/a         Kill switch                 REVERT: NotAuthorized" -ForegroundColor Red
 Write-Host ""
-Write-Host "  Swiss Cheese Model: GoPlus (static) AND AI (source) independently flag both bad tokens." -ForegroundColor Yellow
-Write-Host "  TaxToken: 99% hidden fee caught by GPT-4o + Llama-3 reading Solidity source." -ForegroundColor Yellow
-Write-Host "  HoneypotCoin: transfer allowlist caught by GoPlus (bit 2) + AI honeypotPattern (bit 8)." -ForegroundColor Yellow
-Write-Host "  Union of Fears: blocked if EITHER layer raises any flag." -ForegroundColor Cyan
+Write-Host "  Swiss Cheese Model: GoPlus (static on-chain) AND AI (Solidity source) are independent layers." -ForegroundColor Yellow
+Write-Host "  HoneypotCoin: GoPlus catches it via on-chain simulation (bit 2)." -ForegroundColor Yellow
+Write-Host "  HoneypotCoin: GPT-4o + Llama-3 catch it by reading the transfer allowlist in source (bit 5)." -ForegroundColor Yellow
+Write-Host "  Both layers must miss for a risk to pass through. Neither did." -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  ConfidentialHTTPClient: GoPlus + BaseScan + OpenAI + Groq keys NEVER left the DON." -ForegroundColor Cyan
 Write-Host ""
