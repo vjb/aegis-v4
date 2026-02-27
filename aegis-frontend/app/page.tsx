@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, Bot, SlidersHorizontal, FileText, ShoppingBag, Lock, Unlock, Radio, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, Bot, SlidersHorizontal, FileText, ShoppingBag, Lock, Unlock, Radio, Zap, Wallet, RefreshCw } from 'lucide-react';
 import AgentsTab from './components/AgentsTab';
 import FirewallTab from './components/FirewallTab';
 import AuditLogTab from './components/AuditLogTab';
@@ -10,15 +10,38 @@ import OracleFeed from './components/OracleFeed';
 
 type Tab = 'agents' | 'firewall' | 'log' | 'marketplace';
 
+type WalletInfo = {
+  ownerAddress: string;
+  ownerBalanceEth: string;
+  moduleAddress: string;
+  moduleBalanceEth: string;
+  network: string;
+  explorerBase: string;
+  error?: string;
+};
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('agents');
   const [isKilled, setIsKilled] = useState(false);
-  const [oracleToken, setOracleToken] = useState('');
   const [triggerAudit, setTriggerAudit] = useState<string | null>(null);
+  const [auditVersion, setAuditVersion] = useState(0);
+  const [wallet, setWallet] = useState<WalletInfo | null>(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
-  const handleKillSwitch = () => {
-    setIsKilled(k => !k);
+  const loadWallet = async () => {
+    setWalletLoading(true);
+    try {
+      const res = await fetch('/api/wallet');
+      const data = await res.json();
+      setWallet(data);
+    } catch {
+      setWallet(null);
+    } finally {
+      setWalletLoading(false);
+    }
   };
+
+  useEffect(() => { loadWallet(); }, []);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'agents', label: 'Agents', icon: Bot },
@@ -27,106 +50,117 @@ export default function Home() {
     { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
   ];
 
+  const shortAddr = wallet?.ownerAddress
+    ? `${wallet.ownerAddress.slice(0, 6)}…${wallet.ownerAddress.slice(-4)}`
+    : null;
+
   return (
-    <main
-      className="flex flex-col h-screen"
-      style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}
-    >
+    <main className="flex flex-col h-screen" style={{ background: 'var(--bg-base)' }}>
+
       {/* ── Header ── */}
       <header
-        className="flex items-center justify-between px-5 py-3 flex-shrink-0"
-        style={{ borderBottom: '1px solid var(--border)', background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(12px)' }}
+        className="flex items-center justify-between px-8 py-4 flex-shrink-0"
+        style={{ borderBottom: '1px solid var(--border)', background: 'rgba(13,20,36,0.9)', backdropFilter: 'blur(16px)' }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div
-            className="flex items-center justify-center w-9 h-9 rounded-xl"
-            style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)', boxShadow: '0 0 16px rgba(6,182,212,0.35)' }}
-          >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', boxShadow: '0 0 20px rgba(56,189,248,0.35)' }}>
             <Shield className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold tracking-tight text-base" style={{ color: 'var(--text-primary)' }}>AEGIS</span>
-              <span className="mono text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--cyan-dim)', color: 'var(--cyan)', border: '1px solid rgba(6,182,212,0.2)' }}>v4</span>
+            <div className="flex items-center gap-2.5">
+              <span className="font-bold tracking-tight text-lg mono" style={{ color: 'var(--text-primary)' }}>AEGIS</span>
+              <span className="badge badge-cyan">v4</span>
             </div>
-            <p className="mono text-xs" style={{ color: 'var(--text-muted)' }}>ERC-7579 Executor · Chainlink CRE Oracle</p>
+            <p className="mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>ERC-7579 Executor · Chainlink CRE Oracle</p>
           </div>
         </div>
 
-        {/* Center status */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 mono text-xs" style={{ color: 'var(--text-muted)' }}>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full pulse-slow" style={{ background: 'var(--green)' }} />
-              <span style={{ color: 'var(--green)' }}>Oracle Online</span>
-            </span>
-            <span style={{ color: 'var(--border-bright)' }}>·</span>
-            <span className="flex items-center gap-1.5">
-              <Radio className="w-3 h-3" style={{ color: 'var(--cyan)' }} />
-              <span>Chainlink CRE DON</span>
-            </span>
-            <span style={{ color: 'var(--border-bright)' }}>·</span>
-            <span>Base VNet</span>
-          </div>
+        {/* Center — network + oracle status */}
+        <div className="flex items-center gap-5 mono text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full pulse-slow" style={{ background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
+            <span style={{ color: 'var(--green)' }}>Oracle Online</span>
+          </span>
+          <span style={{ color: 'var(--border-bright)' }}>·</span>
+          <span className="flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5" style={{ color: 'var(--cyan)' }} />
+            Chainlink CRE DON
+          </span>
+          <span style={{ color: 'var(--border-bright)' }}>·</span>
+          <span>{wallet?.network || 'Base VNet'}</span>
         </div>
 
-        {/* Right: kill switch */}
-        <button
-          onClick={handleKillSwitch}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg mono text-sm font-semibold transition-all"
-          style={isKilled ? {
-            background: 'rgba(245,158,11,0.1)',
-            border: '1px solid rgba(245,158,11,0.4)',
-            color: 'var(--amber)',
-            boxShadow: '0 0 16px rgba(245,158,11,0.15)'
-          } : {
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.3)',
-            color: '#f87171',
-          }}
-        >
-          {isKilled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-          {isKilled ? 'UNLOCK PROTOCOL' : 'KILL SWITCH'}
-        </button>
+        {/* Right — wallet pill + kill switch */}
+        <div className="flex items-center gap-3">
+
+          {/* Wallet info pill */}
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl mono text-xs"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-bright)' }}>
+            <Wallet className="w-3.5 h-3.5" style={{ color: 'var(--cyan)' }} />
+            {walletLoading ? (
+              <span style={{ color: 'var(--text-muted)' }}>Loading…</span>
+            ) : wallet?.error ? (
+              <span style={{ color: 'var(--red)' }}>Wallet error</span>
+            ) : (
+              <>
+                {wallet?.explorerBase ? (
+                  <a href={`${wallet.explorerBase}`} target="_blank" rel="noreferrer"
+                    style={{ color: 'var(--text-primary)' }}>
+                    {shortAddr}
+                  </a>
+                ) : (
+                  <span style={{ color: 'var(--text-primary)' }}>{shortAddr}</span>
+                )}
+                <span style={{ color: 'var(--border-bright)' }}>·</span>
+                <span style={{ color: 'var(--cyan)', fontWeight: 600 }}>{wallet?.ownerBalanceEth} ETH</span>
+                <button onClick={loadWallet} title="Refresh balance" style={{ color: 'var(--text-muted)', lineHeight: 0 }}>
+                  <RefreshCw className={`w-3 h-3 ${walletLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Kill switch */}
+          <button
+            onClick={() => setIsKilled(k => !k)}
+            className="btn"
+            style={isKilled ? {
+              background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.35)',
+              color: 'var(--amber)', boxShadow: '0 0 20px rgba(251,191,36,0.15)',
+            } : {
+              background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.28)',
+              color: 'var(--red)',
+            }}
+          >
+            {isKilled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            {isKilled ? 'UNLOCK PROTOCOL' : 'KILL SWITCH'}
+          </button>
+        </div>
       </header>
 
-      {/* ── Kill switch banner ── */}
+      {/* Kill switch banner */}
       {isKilled && (
-        <div className="px-5 py-2 flex items-center gap-2 mono text-xs font-semibold flex-shrink-0"
-          style={{ background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid rgba(245,158,11,0.2)', color: 'var(--amber)' }}>
-          <Zap className="w-3 h-3" />
+        <div className="px-8 py-3 flex items-center gap-2.5 mono text-xs font-semibold flex-shrink-0 slide-in"
+          style={{ background: 'rgba(251,191,36,0.07)', borderBottom: '1px solid rgba(251,191,36,0.18)', color: 'var(--amber)' }}>
+          <Zap className="w-3.5 h-3.5" />
           PROTOCOL LOCKED — All agentic outflow halted. Smart Account connections severed.
         </div>
       )}
 
-      {/* ── Body: Left tabs + Right oracle ── */}
+      {/* ── Body ── */}
       <div className="flex flex-1 min-h-0">
 
         {/* Left panel */}
-        <div className="flex flex-col w-[58%] min-h-0" style={{ borderRight: '1px solid var(--border)' }}>
-          {/* Tab bar */}
-          <div
-            className="flex items-center gap-1 px-4 py-2 flex-shrink-0"
-            style={{ borderBottom: '1px solid var(--border)', background: 'rgba(15,23,42,0.5)' }}
-          >
+        <div className="flex flex-col min-h-0" style={{ width: '58%', borderRight: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-1.5 px-6 py-3 flex-shrink-0"
+            style={{ borderBottom: '1px solid var(--border)', background: 'rgba(13,20,36,0.5)' }}>
             {tabs.map(t => {
               const Icon = t.icon;
-              const active = activeTab === t.id;
               return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg mono text-xs font-medium transition-all"
-                  style={active ? {
-                    background: 'var(--cyan-dim)',
-                    color: 'var(--cyan)',
-                    border: '1px solid rgba(6,182,212,0.2)'
-                  } : {
-                    color: 'var(--text-muted)',
-                    border: '1px solid transparent',
-                  }}
-                >
+                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                  className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}>
                   <Icon className="w-3.5 h-3.5" />
                   {t.label}
                 </button>
@@ -134,18 +168,17 @@ export default function Home() {
             })}
           </div>
 
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {activeTab === 'agents' && <AgentsTab isKilled={isKilled} onAudit={tok => setTriggerAudit(tok)} />}
+          <div className="flex-1 overflow-y-auto" style={{ padding: '24px' }}>
+            {activeTab === 'agents' && <AgentsTab isKilled={isKilled} onAudit={(tok: string) => setTriggerAudit(tok)} />}
             {activeTab === 'firewall' && <FirewallTab />}
-            {activeTab === 'log' && <AuditLogTab />}
-            {activeTab === 'marketplace' && <MarketplaceTab isKilled={isKilled} onAudit={tok => { setActiveTab('agents'); setTriggerAudit(tok); }} />}
+            {activeTab === 'log' && <AuditLogTab refreshTrigger={auditVersion} />}
+            {activeTab === 'marketplace' && <MarketplaceTab isKilled={isKilled} onAudit={(tok: string) => { setActiveTab('agents'); setTriggerAudit(tok); }} />}
           </div>
         </div>
 
-        {/* Right panel — Oracle Feed (always visible) */}
+        {/* Right panel — Oracle Feed */}
         <div className="flex-1 flex flex-col min-h-0">
-          <OracleFeed isKilled={isKilled} externalTrigger={triggerAudit} onTriggerConsumed={() => setTriggerAudit(null)} />
+          <OracleFeed isKilled={isKilled} externalTrigger={triggerAudit} onTriggerConsumed={() => setTriggerAudit(null)} onComplete={() => setAuditVersion((v: number) => v + 1)} />
         </div>
       </div>
     </main>

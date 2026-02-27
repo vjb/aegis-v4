@@ -1,120 +1,156 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, ExternalLink, Filter } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { CheckCircle, XCircle, Clock, ExternalLink, RefreshCw, Loader2, ArrowRightLeft } from 'lucide-react';
 
-type LogEntry = {
-    id: string;
-    time: Date;
-    agent: string;
+type EventEntry = {
+    txHash: string;
+    blockNumber: string;
+    type: string;
     token: string;
-    riskCode: number;
-    status: 'Cleared' | 'Blocked' | 'Pending';
-    txHash?: string;
+    agent?: string;
+    riskCode?: number;
+    approved?: boolean;
+    status: 'Cleared' | 'Blocked' | 'Pending' | 'Swap';
+    explorerUrl: string;
 };
 
-const INITIAL_LOGS: LogEntry[] = [
-    { id: '1', time: new Date(Date.now() - 2 * 60000), agent: 'NOVA', token: 'BRETT', riskCode: 0, status: 'Cleared', txHash: '0x1a2b3c' },
-    { id: '2', time: new Date(Date.now() - 4 * 60000), agent: 'CIPHER', token: 'TaxToken', riskCode: 18, status: 'Blocked', txHash: '0x4d5e6f' },
-    { id: '3', time: new Date(Date.now() - 7 * 60000), agent: 'REX', token: 'HoneypotCoin', riskCode: 4, status: 'Blocked', txHash: '0x7a8b9c' },
-    { id: '4', time: new Date(Date.now() - 12 * 60000), agent: 'PHANTOM', token: 'TOSHI', riskCode: 0, status: 'Cleared', txHash: '0xabc123' },
-    { id: '5', time: new Date(Date.now() - 20 * 60000), agent: 'NOVA', token: 'DEGEN', riskCode: 0, status: 'Cleared', txHash: '0xdef456' },
-];
-
-function timeAgo(d: Date) {
-    const secs = Math.floor((Date.now() - d.getTime()) / 1000);
-    if (secs < 60) return `${secs}s ago`;
-    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-    return `${Math.floor(secs / 3600)}h ago`;
-}
-
-function decodeBits(code: number) {
-    const names = ['Unverified', 'SellRestriction', 'Honeypot', 'Proxy', 'ObfuscatedTax', 'PrivEscalation', 'ExtCallRisk', 'LogicBomb'];
-    return names.filter((_, i) => (code & (1 << i)) !== 0);
-}
-
-export default function AuditLogTab() {
-    const [logs] = useState<LogEntry[]>(INITIAL_LOGS);
+export default function AuditLogTab({ refreshTrigger }: { refreshTrigger?: number }) {
+    const [events, setEvents] = useState<EventEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'Cleared' | 'Blocked'>('all');
 
-    const filtered = filter === 'all' ? logs : logs.filter(l => l.status === filter);
+    const load = useCallback(async () => {
+        setLoading(true); setError(null);
+        try {
+            const res = await fetch('/api/events');
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setEvents(data.events || []);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    const cleared = logs.filter(l => l.status === 'Cleared').length;
-    const blocked = logs.filter(l => l.status === 'Blocked').length;
+    // Reload on mount AND whenever an oracle audit completes (refreshTrigger increments)
+    useEffect(() => { load(); }, [load, refreshTrigger]);
+
+    const BIT_NAMES = ['Unverified', 'SellRestriction', 'Honeypot', 'Proxy', 'ObfuscatedTax', 'PrivEscalation', 'ExtCallRisk', 'LogicBomb'];
+    const decodeBits = (c: number) => BIT_NAMES.filter((_, i) => (c & (1 << i)) !== 0);
+
+    const filtered = filter === 'all' ? events : events.filter(e => e.status === filter);
+    const cleared = events.filter(e => e.status === 'Cleared').length;
+    const blocked = events.filter(e => e.status === 'Blocked').length;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Audit Log</h2>
-                    <p className="mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--green)' }}>{cleared} cleared</span>
-                        <span className="mx-2" style={{ color: 'var(--border-bright)' }}>·</span>
-                        <span style={{ color: 'var(--red)' }}>{blocked} blocked</span>
+                    <h2 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Audit Log</h2>
+                    <p className="mono text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                        {loading ? 'Reading on-chain events…' : (
+                            <>
+                                <span style={{ color: 'var(--green)' }}>{cleared} cleared</span>
+                                <span className="mx-2" style={{ color: 'var(--text-subtle)' }}>·</span>
+                                <span style={{ color: 'var(--red)' }}>{blocked} blocked</span>
+                                <span className="mx-2" style={{ color: 'var(--text-subtle)' }}>·</span>
+                                <span>{events.length} total events</span>
+                            </>
+                        )}
                     </p>
                 </div>
-                <div className="flex items-center gap-1">
-                    {(['all', 'Cleared', 'Blocked'] as const).map(f => (
-                        <button key={f} onClick={() => setFilter(f)}
-                            className="mono text-xs px-2.5 py-1 rounded-lg transition-all capitalize"
-                            style={filter === f ? {
-                                background: 'var(--cyan-dim)', color: 'var(--cyan)', border: '1px solid rgba(6,182,212,0.2)'
-                            } : {
-                                background: 'transparent', color: 'var(--text-muted)', border: '1px solid transparent'
-                            }}>
-                            {f}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-2">
+                    <button onClick={load} className="btn btn-ghost" style={{ padding: '8px 10px' }} title="Refresh from chain">
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <div className="flex items-center gap-1.5">
+                        {(['all', 'Cleared', 'Blocked'] as const).map(f => (
+                            <button key={f} onClick={() => setFilter(f)} className={`tab-btn ${filter === f ? 'active' : ''}`}
+                                style={{ padding: '6px 12px', fontSize: 12 }}>
+                                {f === 'all' ? 'All' : f}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Log list */}
-            <div className="space-y-2">
-                {filtered.map(entry => {
-                    const bits = decodeBits(entry.riskCode);
+            {/* Error */}
+            {error && (
+                <div className="card" style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'var(--red-dim)', padding: '14px 18px' }}>
+                    <p className="mono text-xs" style={{ color: 'var(--red)' }}>⚠ Event fetch failed: {error}</p>
+                </div>
+            )}
+
+            {/* Loading */}
+            {loading && events.length === 0 && (
+                <div className="flex items-center justify-center py-16 gap-3 mono text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--cyan)' }} />
+                    Fetching ClearanceUpdated, ClearanceDenied events…
+                </div>
+            )}
+
+            {/* Empty */}
+            {!loading && events.length === 0 && !error && (
+                <div className="text-center py-16 mono text-sm" style={{ color: 'var(--text-muted)' }}>
+                    No audit events found on this VNet yet.<br />
+                    <span style={{ color: 'var(--text-subtle)', fontSize: 12 }}>Run an oracle audit from the right panel to generate events.</span>
+                </div>
+            )}
+
+            {/* Events */}
+            <div className="space-y-3">
+                {filtered.map((entry, i) => {
+                    const bits = entry.riskCode != null ? decodeBits(entry.riskCode) : [];
+                    const isSwap = entry.type === 'SwapExecuted';
+
                     return (
-                        <div key={entry.id} className="rounded-xl p-3.5"
-                            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-2.5">
-                                    {entry.status === 'Cleared'
-                                        ? <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--green)' }} />
-                                        : entry.status === 'Blocked'
-                                            ? <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--red)' }} />
-                                            : <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--amber)' }} />}
+                        <div key={`${entry.txHash}-${i}`} className="card slide-in" style={{ padding: '16px 20px' }}>
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
+                                    {isSwap
+                                        ? <ArrowRightLeft className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--indigo)' }} />
+                                        : entry.status === 'Cleared'
+                                            ? <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--green)' }} />
+                                            : entry.status === 'Blocked'
+                                                ? <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--red)' }} />
+                                                : <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--amber)' }} />}
+
                                     <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="mono text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                                {entry.agent}
-                                            </span>
-                                            <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>→</span>
-                                            <span className="mono text-xs font-semibold" style={{ color: 'var(--cyan)' }}>{entry.token}</span>
-                                            <span className="mono text-xs px-1.5 py-0.5 rounded"
-                                                style={entry.status === 'Cleared'
-                                                    ? { background: 'var(--green-dim)', color: 'var(--green)' }
-                                                    : { background: 'var(--red-dim)', color: 'var(--red)' }}>
-                                                {entry.status === 'Cleared' ? `Risk Code: 0` : `Risk Code: ${entry.riskCode}`}
-                                            </span>
+                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                            <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>{entry.type}</span>
+                                            <span style={{ color: 'var(--text-muted)' }}>·</span>
+                                            <span className="mono font-semibold text-sm" style={{ color: 'var(--cyan)' }}>{entry.token}</span>
+                                            {entry.riskCode != null && (
+                                                <span className={`badge ${entry.status === 'Cleared' ? 'badge-green' : 'badge-red'}`}>
+                                                    Risk Code: {entry.riskCode}
+                                                </span>
+                                            )}
+                                            {isSwap && <span className="badge badge-indigo">Swap Executed</span>}
                                         </div>
+                                        {entry.agent && (
+                                            <p className="mono text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                                                Agent: {entry.agent.slice(0, 10)}…{entry.agent.slice(-6)}
+                                            </p>
+                                        )}
                                         {bits.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-1.5">
-                                                {bits.map(b => (
-                                                    <span key={b} className="mono text-xs px-1.5 py-0.5 rounded"
-                                                        style={{ background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                                                        {b}
-                                                    </span>
-                                                ))}
+                                            <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                                {bits.map(b => <span key={b} className="badge badge-red">{b}</span>)}
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>{timeAgo(entry.time)}</span>
-                                    {entry.txHash && (
-                                        <a href="#" className="flex items-center gap-1 mono text-xs transition-colors"
-                                            style={{ color: 'var(--text-muted)' }}>
-                                            <ExternalLink className="w-3 h-3" />
+
+                                <div className="flex items-center gap-3 flex-shrink-0">
+                                    <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>Block #{entry.blockNumber}</span>
+                                    {entry.explorerUrl && (
+                                        <a href={entry.explorerUrl} target="_blank" rel="noreferrer"
+                                            className="mono text-xs" style={{ color: 'var(--cyan)' }} title="View on Tenderly">
+                                            <ExternalLink className="w-3.5 h-3.5" />
                                         </a>
                                     )}
                                 </div>
@@ -122,12 +158,6 @@ export default function AuditLogTab() {
                         </div>
                     );
                 })}
-
-                {filtered.length === 0 && (
-                    <div className="text-center py-12 mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                        No {filter === 'all' ? '' : filter.toLowerCase()} audit events yet
-                    </div>
-                )}
             </div>
         </div>
     );

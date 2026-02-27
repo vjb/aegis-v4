@@ -44,6 +44,9 @@ const moduleAbi = [
 export async function GET(req: NextRequest) {
     const tokenArg = req.nextUrl.searchParams.get('token') || 'BRETT';
     const amountArg = req.nextUrl.searchParams.get('amount') || '0.01';
+    // auditOnly=true means: run the oracle pipeline + commit verdict, but do NOT execute a swap.
+    // The Oracle Feed in the UI always passes auditOnly=true. Demo scripts can pass auditOnly=false.
+    const auditOnly = req.nextUrl.searchParams.get('auditOnly') !== 'false';
 
     let targetToken = tokenArg;
     let targetAddress = '';
@@ -93,7 +96,7 @@ export async function GET(req: NextRequest) {
                 const publicClient = createPublicClient({ chain: aegisTenderly, transport: http(tenderlyRpc) });
 
                 send({ type: 'phase', phase: 'Connecting to Chainlink CRE DON' });
-                send({ type: 'phase', phase: `Requesting audit for ${targetToken} on-chain` });
+                send({ type: 'phase', phase: `Submitting requestAudit(${targetToken}) on-chain` });
 
                 const hash = await walletClient.writeContract({
                     address: getAddress(moduleAddr),
@@ -111,6 +114,7 @@ export async function GET(req: NextRequest) {
 
                 send({ type: 'tx', hash, explorerBaseUrl: tenderlyId ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx` : '' });
                 send({ type: 'phase', phase: 'Spinning up Oracle Brain' });
+                // Note: GoPlus and BaseScan phases are emitted by processLine via __GOPLUS_START__ etc. markers
 
                 let extractedScore = -1;
                 let computedScore = 0;
@@ -165,13 +169,14 @@ export async function GET(req: NextRequest) {
                     }
 
                     // GoPlus/BaseScan markers
-                    if (cleaned.includes('__GOPLUS_START__')) { send({ type: 'static-analysis', source: 'GoPlus Security', status: 'pending' }); return; }
-                    if (cleaned.includes('__BASESCAN_START__')) { send({ type: 'static-analysis', source: 'BaseScan Code Fetcher', status: 'pending' }); return; }
-                    if (cleaned.includes('__BASESCAN_END__')) { send({ type: 'static-analysis', source: 'BaseScan Code Fetcher', status: 'OK' }); return; }
+                    // Use source names that exactly match the labels in OracleFeed.tsx
+                    if (cleaned.includes('__GOPLUS_START__')) { send({ type: 'static-analysis', source: 'GoPlus', status: 'pending' }); return; }
+                    if (cleaned.includes('__BASESCAN_START__')) { send({ type: 'static-analysis', source: 'BaseScan', status: 'pending' }); return; }
+                    if (cleaned.includes('__BASESCAN_END__')) { send({ type: 'static-analysis', source: 'BaseScan', status: 'OK' }); return; }
                     if (cleaned.includes('__GOPLUS__')) {
                         try {
                             const json = JSON.parse(cleaned.substring(cleaned.indexOf('__GOPLUS__') + 10));
-                            send({ type: 'static-analysis', source: 'GoPlus Security', ...json });
+                            send({ type: 'static-analysis', source: 'GoPlus', status: 'OK', ...json });
                         } catch { }
                         return;
                     }
@@ -208,11 +213,11 @@ export async function GET(req: NextRequest) {
                     send({ type: 'tx-status', status: cbReceipt.status === 'success' ? 'Confirmed' : 'Reverted', hash: callbackHash });
                 }
 
-                // JIT swap for clean real tokens
+                // JIT swap — ONLY when explicitly requested (auditOnly=false), never from the UI Oracle Feed
                 const isMock = /^0x0{38,}[0-9a-f]{1,2}$/i.test(targetAddress);
-                if (extractedScore === 0 && !isMock) {
+                if (!auditOnly && extractedScore === 0 && !isMock) {
                     try {
-                        send({ type: 'phase', phase: `JIT Execution: swapping ${amountArg} ETH → ${targetToken} via Uniswap V3` });
+                        send({ type: 'phase', phase: `JIT: executing swap → ${amountArg} ETH for ${targetToken}` });
                         const swapHash = await walletClient.writeContract({
                             address: getAddress(moduleAddr),
                             abi: moduleAbi,
@@ -227,19 +232,24 @@ export async function GET(req: NextRequest) {
                         } catch { }
                         send({ type: 'swap-executed', hash: swapHash, amountIn: `${amountArg} ETH`, amountOut, token: targetToken });
                     } catch (se: any) {
-                        send({ type: 'phase', phase: `Swap skipped: ${se.message?.substring(0, 80)}` });
+                        send({ type: 'error', message: `Swap failed: ${se.message?.substring(0, 120)}` });
                     }
                 }
 
-                send({ type: 'phase', phase: 'Reading Adjudging State off Tenderly...' });
+                send({ type: 'phase', phase: 'Finalising CRE verdict' });
 
                 const safe = Math.max(0, extractedScore);
                 const CHECKS = ['Unverified Code', 'Sell Restriction', 'Known Honeypot', 'Upgradeable Proxy', 'Obfuscated Tax', 'Privilege Escalation', 'External Call Risk', 'Logic Bomb'];
+                // triggered=true means the risk WAS detected (bad). triggered=false means clean.
                 const checks = CHECKS.map((name, i) => ({ name, triggered: (safe & (1 << i)) !== 0 }));
                 const status = extractedScore < 0 ? 'ERROR' : extractedScore === 0 ? 'APPROVED' : 'BLOCKED';
                 const reasoning = status === 'APPROVED'
-                    ? 'Contract source verified. GoPlus signals clean. Both GPT-4o and Llama-3 found no risk flags. Trade cleared.'
-                    : (safe & 128) ? 'Logic Bomb detected in bytecode.' : (safe & 4) ? 'Honeypot architecture detected.' : (safe & 16) ? 'Obfuscated tax mechanism detected.' : `Risk flags detected. Score: ${safe}`;
+                    ? `CRE audit complete. GoPlus: clean. BaseScan: source verified. GPT-4o + Llama-3: no risk flags found. Risk Code 0 committed on-chain via onReportDirect().`
+                    : (safe & 128) ? `Logic Bomb detected in contract bytecode (Bit 7). CRE consensus BLOCKED this trade. Risk Code ${safe} committed on-chain.`
+                        : (safe & 4) ? `Honeypot architecture detected (Bit 2). GoPlus/AI consensus BLOCKED this trade. Risk Code ${safe} committed on-chain.`
+                            : (safe & 16) ? `Obfuscated tax mechanism detected in source code (Bit 4). AI consensus BLOCKED this trade. Risk Code ${safe} committed on-chain.`
+                                : (safe & 2) ? `Sell restriction / high tax detected (Bit 1). GoPlus flagged this token. Risk Code ${safe} committed on-chain.`
+                                    : `CRE audit flagged this token. Risk Code ${safe} committed on-chain via onReportDirect().`;
 
                 const explorerUrl = tenderlyId ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx/${hash}` : '';
                 const callbackUrl = callbackHash && tenderlyId ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx/${callbackHash}` : null;
