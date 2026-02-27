@@ -2,6 +2,28 @@
 
 Next.js UI for the Aegis Protocol. Connects to a live Tenderly VNet and the Chainlink CRE oracle to show real-time audit results, agent activity, and on-chain verdicts.
 
+```mermaid
+flowchart LR
+    User(["User / Wallet"])
+    subgraph UI ["Next.js Frontend"]
+        OF["Oracle Feed\nlive CRE log stream"]
+        AD["Agent Dashboard\nbudgets & trade history"]
+        FW["Firewall Tab\nblocks & bypass attempts"]
+    end
+    subgraph Chain ["Base VNet (Tenderly)"]
+        AM["AegisModule.sol\nERC-7579 Executor"]
+        UNI["Uniswap V3\nSwapRouter02"]
+    end
+    CRE["Chainlink CRE\nGoPlus + GPT-4o + Llama-3"]
+
+    User -- "MetaMask / injected" --> UI
+    OF -- "reads logs" --> AM
+    AD -- "cast call / send" --> AM
+    AM -- "AuditRequested event" --> CRE
+    CRE -- "onReport verdict" --> AM
+    AM -- "triggerSwap clearance" --> UNI
+```
+
 ## Features
 
 - **Oracle Feed** — live streaming log of the CRE pipeline (GoPlus → BaseScan → GPT-4o → Llama-3 → verdict)

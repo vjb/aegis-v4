@@ -57,6 +57,7 @@ RUN mkdir -p /root/.cache/javy/v5.0.4/linux-x64 && \
 # 8. Set working directory
 WORKDIR /app
 
-# 9. Keep container alive
-# Allows you to 'docker exec' into a running environment at any time.
-CMD ["tail", "-f", "/dev/null"]
+# 9. Entrypoint — auto-runs cre-setup on first start, keeps container alive
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

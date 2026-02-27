@@ -2,14 +2,32 @@
 
 The Chainlink Runtime Environment (CRE) oracle that powers Aegis V4's off-chain AI security audit pipeline. All external API calls go through `ConfidentialHTTPClient` — API keys never leave the DON.
 
+## CRE Oracle Pipeline
+
+```mermaid
+flowchart TD
+    A(["AuditRequested\non-chain event"]) --> B["Phase 1\nGoPlus"]
+    B --> |"ConfidentialHTTPClient"| C["GoPlus API\nhoneypot · sell restriction · proxy"]
+    C --> D["Phase 2\nBaseScan"]
+    D --> |"ConfidentialHTTPClient"| E["BaseScan API\nfull Solidity source fetched"]
+    E --> F["Phase 3\nAI Consensus"]
+    F --> |"ConfidentialHTTPClient"| G["GPT-4o\nobfuscated tax · logic bomb"]
+    F --> |"ConfidentialHTTPClient"| H["Llama-3\nindependent verification"]
+    G --> I["Union of Fears\nblocked if EITHER flags risk"]
+    H --> I
+    I --> J(["onReport\nriskScore → AegisModule"])
+```
+
+> All external API calls use `ConfidentialHTTPClient` — API keys and contract source never leave the DON.
+
 ## What It Does
 
 When `AegisModule.requestAudit(token)` is called on-chain, the CRE workflow:
 
 1. **Detects** the `AuditRequested` event via EVM log trigger (WASM sandbox)
-2. **Phase 1 — GoPlus** — static on-chain analysis via `ConfidentialHTTPClient`. Attempts JWT auth with `AEGIS_GOPLUS_KEY`; falls back to unauthenticated free tier on same channel. Checks: honeypot, sell restriction, proxy, unverified source.
+2. **Phase 1 — GoPlus** — static on-chain analysis via `ConfidentialHTTPClient`
 3. **Phase 2 — BaseScan** — fetches full Solidity source via `ConfidentialHTTPClient`. `AEGIS_BASESCAN_SECRET` stays in the DON.
-4. **Phase 3 — AI Consensus** — sends source to GPT-4o and Llama-3 (each via `ConfidentialHTTPClient`). Both models independently audit for: obfuscated tax, privilege escalation, external call risk, logic bombs. **Union of Fears:** blocked if EITHER model raises a flag.
+4. **Phase 3 — AI Consensus** — GPT-4o and Llama-3 each audit the source via `ConfidentialHTTPClient`. **Union of Fears:** blocked if EITHER model raises a flag.
 5. **Delivers** `onReport(tradeId, riskScore)` to `AegisModule` via `KeystoneForwarder`.
 
 ## Files

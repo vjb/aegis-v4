@@ -52,20 +52,6 @@ AI Agent (Session Key / UserOp)
 
 ---
 
-## 🔬 Live Integration Status
-
-| Component | Status | Evidence |
-|---|---|---|
-| `AegisModule.sol` (ERC-7579) | ✅ **Deployed & Verified** | `0x46d40e0aBdA0814bb0CB323B2Bb85a129d00B0AC` on Base VNet |
-| Forge Tests | ✅ **7/7 passing** | `forge test --match-contract AegisModuleTest` |
-| Jest Tests | ✅ **12/12 passing** | `pnpm exec jest` |
-| Chainlink CRE Live Oracle | ✅ **All 3 demos verified** | GoPlus + BaseScan + GPT-4o + Llama-3 pipeline |
-| BRETT (real Base token) | ✅ **Cleared — Risk Code 0** | Both AI models: all flags false → `isApproved=TRUE` |
-| TaxToken (mock malicious) | ⛔ **Firewall blocked — Risk Code 2** | Sell restriction detected → `ClearanceDenied` *(correct behavior)* |
-| HoneypotCoin (mock malicious) | ⛔ **Firewall blocked — Risk Code 5** | Honeypot pattern detected → `ClearanceDenied` *(correct behavior)* |
-| Uniswap V3 Swap | ✅ **Live on fork** | `NOVA` agent executed real WETH→BRETT swap after CRE clearance |
-
----
 
 ## 🎬 Demo Scripts
 
@@ -204,7 +190,7 @@ cp .env.example .env   # Fill in your keys
 ### 5. Start the Chainlink CRE oracle node
 ```powershell
 .\scripts\start_oracle.ps1
-# Then from inside Docker: bun x cre-setup (first time only)
+# cre-setup runs automatically on first container start
 ```
 
 ### 6. Run the live integration
@@ -245,7 +231,7 @@ The result is an **8-bit risk matrix** delivered to `AegisModule.onReport(tradeI
 
 ## 🏗️ Architecture
 
-See [docs/ERC7579_ROADMAP.md](docs/ERC7579_ROADMAP.md) for the full architecture deep-dive.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture deep-dive.
 
 | Layer | Technology | Role |
 |---|---|---|
@@ -275,9 +261,9 @@ See [docs/ERC7579_ROADMAP.md](docs/ERC7579_ROADMAP.md) for the full architecture
 ## 🔗 Links
 
 - [**Demo Guide**](docs/DEMO_GUIDE.md) ← how to run all 3 demos, what to look for
-- [System Architecture Diagrams](docs/ARCHITECTURE.md) ← 12 Mermaid diagrams
-- [Architecture Roadmap](docs/ERC7579_ROADMAP.md)
-- [Engineering Ledger](docs/lessons_learned.md)
+- [**Confidential HTTP**](docs/CONFIDENTIAL_HTTP.md) ← Privacy track deep-dive
+- [System Architecture](docs/ARCHITECTURE.md) ← 12 Mermaid diagrams
+- [Engineering Ledger](docs/LESSONS_LEARNED.md)
 - [Smart Contract](src/AegisModule.sol)
 - [CRE Oracle](cre-node/aegis-oracle.ts)
 - [Chainlink CRE Docs](https://docs.chain.link/cre)
