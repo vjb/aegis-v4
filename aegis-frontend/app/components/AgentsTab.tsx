@@ -296,7 +296,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
 
                     return (
                         <div key={agent.address} className="card slide-in"
-                            style={{ padding: '22px 24px', borderColor: agent.active ? undefined : 'rgba(248,113,113,0.18)' }}>
+                            style={{ padding: '22px 24px', marginBottom: '24px', borderColor: agent.active ? undefined : 'rgba(248,113,113,0.18)' }}>
 
                             <div className="flex items-start justify-between mb-5">
                                 <div className="flex items-center gap-4">
