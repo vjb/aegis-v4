@@ -15891,7 +15891,6 @@ var performStaticAnalysis = (nodeRuntime, input) => {
   const { log, goPlusAppKey, goPlusAppSecret } = input;
   let unverifiedCode = 0, sellRestriction = 0, honeypot = 0, proxyContract = 0;
   const confidentialClient = new ClientCapability2;
-  const httpClient = new ClientCapability3;
   if (!log.topics || log.topics.length < 4) {
     throw new Error("Invalid log topics for AuditRequested");
   }
@@ -15940,21 +15939,17 @@ var performStaticAnalysis = (nodeRuntime, input) => {
     } else {
       nodeRuntime.log(`[GoPlus] Auth HTTP ${tokenRes.statusCode} — falling back to unauthenticated`);
     }
-    nodeRuntime.log(`[GoPlus] Fetching token_security for ${targetAddress} (auth=${!!goPlusToken})`);
+    nodeRuntime.log(`[GoPlus] Fetching token_security for ${targetAddress} (auth=${!!goPlusToken}) via ConfidentialHTTPClient`);
     const goPlusUrl = `https://api.gopluslabs.io/api/v1/token_security/8453?contract_addresses=${targetAddress}`;
-    let goPlusRes;
-    if (goPlusToken) {
-      goPlusRes = confidentialClient.sendRequest(nodeRuntime, {
-        vaultDonSecrets: [{ key: "AEGIS_GOPLUS_KEY", namespace: "aegis" }],
-        request: {
-          url: goPlusUrl,
-          method: "GET",
-          multiHeaders: { Authorization: { values: [`Bearer ${goPlusToken}`] } }
-        }
-      }).result();
-    } else {
-      goPlusRes = httpClient.sendRequest(nodeRuntime, { method: "GET", url: goPlusUrl }).result();
-    }
+    const goPlusReq = {
+      vaultDonSecrets: goPlusToken ? [{ key: "AEGIS_GOPLUS_KEY", namespace: "aegis" }] : [],
+      request: {
+        url: goPlusUrl,
+        method: "GET",
+        ...goPlusToken && { multiHeaders: { Authorization: { values: [`Bearer ${goPlusToken}`] } } }
+      }
+    };
+    const goPlusRes = confidentialClient.sendRequest(nodeRuntime, goPlusReq).result();
     nodeRuntime.log(`[GoPlus] HTTP ${goPlusRes.statusCode}`);
     if (goPlusRes.statusCode !== 200)
       throw new Error(`GoPlus Error: ${goPlusRes.statusCode}`);
@@ -16191,8 +16186,11 @@ var onAuditTrigger = (runtime2, log) => {
   const basescanKey = runtime2.getSecret({ id: "AEGIS_BASESCAN_SECRET" }).result().value;
   const openAiKey = runtime2.getSecret({ id: "AEGIS_OPENAI_SECRET" }).result().value;
   const groqKey = runtime2.getSecret({ id: "AEGIS_GROQ_SECRET" }).result().value;
-  const goPlusAppKey = runtime2.getSecret({ id: "AEGIS_GOPLUS_KEY" }).result().value;
-  const goPlusAppSecret = runtime2.getSecret({ id: "AEGIS_GOPLUS_SECRET" }).result().value;
+  let goPlusAppKey = "", goPlusAppSecret = "";
+  try {
+    goPlusAppKey = runtime2.getSecret({ id: "AEGIS_GOPLUS_KEY" }).result().value || "";
+    goPlusAppSecret = runtime2.getSecret({ id: "AEGIS_GOPLUS_SECRET" }).result().value || "";
+  } catch {}
   const staticResult = runtime2.runInNodeMode(performStaticAnalysis, ConsensusAggregationByFields({
     targetAddress: identical,
     goPlusStatus: ignore,
