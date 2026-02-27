@@ -185,7 +185,11 @@ export default function AegisChat({
                 body: JSON.stringify({ messages: history }),
             });
 
-            if (!res.body) throw new Error('No stream');
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+                throw new Error(errBody.error || `HTTP ${res.status}`);
+            }
+            if (!res.body) throw new Error('No stream body');
 
             const reader = res.body.getReader();
             const dec = new TextDecoder();
