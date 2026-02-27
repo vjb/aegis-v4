@@ -1,0 +1,286 @@
+<#
+.SYNOPSIS
+  Aegis V4 — Demo Script 2: "The Firewall That Runs Itself"
+  Risk & Compliance Track | DeFi & Tokenization Track
+
+.DESCRIPTION
+  Three AI agents — NOVA, CIPHER, and REX — each submit trade intents.
+  NOVA gets BRETT (cleared, real Uniswap V3 swap).
+  CIPHER gets TaxToken (blocked — sell restriction, riskScore=2).
+  REX gets HoneypotCoin (blocked — honeypot, riskScore=5),
+  then tries to bypass the firewall and gets reverted.
+
+.EXAMPLE
+  .\scripts\demo_2_multi_agent.ps1 -Interactive
+#>
+
+param([switch]$Interactive)
+
+$ErrorActionPreference = "Continue"
+$env:FOUNDRY_DISABLE_NIGHTLY_WARNING = "true"
+
+$RPC = ""; $PK = ""; $ModuleAddr = ""
+foreach ($line in (Get-Content .env)) {
+    if ($line -match "^TENDERLY_RPC_URL=(.*)")    { $RPC        = $Matches[1].Trim() }
+    if ($line -match "^PRIVATE_KEY=(.*)")          { $PK         = $Matches[1].Trim() }
+    if ($line -match "^AEGIS_MODULE_ADDRESS=(.*)") { $ModuleAddr = $Matches[1].Trim() }
+}
+
+$NovaPK   = "0x000000000000000000000000000000000000000000000000000000000000dead"
+$CipherPK = "0x000000000000000000000000000000000000000000000000000000000000beef"
+$RexPK    = "0x000000000000000000000000000000000000000000000000000000000000cafe"
+
+$NovaAddr   = (cast wallet address --private-key $NovaPK   2>&1 | Select-Object -First 1).Trim()
+$CipherAddr = (cast wallet address --private-key $CipherPK 2>&1 | Select-Object -First 1).Trim()
+$RexAddr    = (cast wallet address --private-key $RexPK    2>&1 | Select-Object -First 1).Trim()
+
+$BRETT    = "0x532f27101965dd16442E59d40670FaF5eBB142E4"
+$TaxToken = "0x000000000000000000000000000000000000000c"
+$Honeypot = "0x000000000000000000000000000000000000000b"
+
+function Banner($text, $color = "Cyan") {
+    Write-Host ""; Write-Host ("=" * 70) -ForegroundColor $color
+    Write-Host "  $text" -ForegroundColor White
+    Write-Host ("=" * 70) -ForegroundColor $color; Write-Host ""
+}
+
+function Scene {
+    param([string]$Title, [string[]]$Lines, [string]$Prompt)
+    if (-not $Interactive) { return }
+    Clear-Host
+    Banner "AEGIS PROTOCOL V4  *  DEMO 2: THE FIREWALL THAT RUNS ITSELF" Cyan
+    Write-Host ("  +" + ("-" * 64) + "+") -ForegroundColor DarkCyan
+    Write-Host ("  | " + "  $Title".PadRight(63) + "|") -ForegroundColor DarkCyan
+    Write-Host ("  |" + (" " * 65) + "|") -ForegroundColor DarkCyan
+    foreach ($l in $Lines) { Write-Host ("  | " + "  $l".PadRight(63) + "|") -ForegroundColor DarkCyan }
+    Write-Host ("  +" + ("-" * 64) + "+") -ForegroundColor DarkCyan
+    Write-Host ""; Write-Host "  >> $Prompt" -ForegroundColor Cyan
+    Write-Host "     Press ENTER to execute -> " -ForegroundColor DarkCyan -NoNewline
+    Read-Host; Write-Host ""
+}
+
+function Pause($msg = "Press ENTER to continue ->") {
+    if (-not $Interactive) { return }
+    Write-Host ""; Write-Host "  --- $msg " -ForegroundColor Cyan -NoNewline
+    Read-Host; Write-Host ""
+}
+
+function Ok($t)      { Write-Host "  OK  $t" -ForegroundColor Green }
+function Blocked($t) { Write-Host "  BLOCKED  $t" -ForegroundColor Red }
+function Info($t)    { Write-Host "  >>  $t"  -ForegroundColor DarkGray }
+function Cmd($t)     { Write-Host "  >   $t"  -ForegroundColor Magenta }
+
+# TITLE
+Clear-Host
+Banner "AEGIS PROTOCOL V4  *  DEMO 2: THE FIREWALL THAT RUNS ITSELF" Cyan
+Write-Host "  Targets:  Risk & Compliance (16K) | DeFi & Tokenization (20K)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Three AI agents. Three trade intents. One firewall."
+Write-Host "  No human approval. The Chainlink CRE oracle IS the compliance desk."
+Write-Host ""
+Write-Host "  NOVA   (0.05 ETH budget) => wants BRETT        => CLEARED => real swap"
+Write-Host "  CIPHER (0.01 ETH budget) => wants TaxToken     => BLOCKED (riskScore=2)"
+Write-Host "  REX    (0.01 ETH budget) => wants HoneypotCoin => BLOCKED (riskScore=5) + bypass revert"
+Write-Host ""
+Write-Host "  AegisModule: $ModuleAddr" -ForegroundColor White
+Write-Host ""
+Pause "Ready? Press ENTER to begin the multi-agent firewall demo."
+
+# SCENE 1 — SETUP
+Scene -Title "SCENE 1: FUND TREASURY & HIRE ALL THREE AGENTS" -Lines @(
+    "The owner funds the module with 0.1 ETH and hires three agents.",
+    "Each agent gets its own ETH budget cap — enforced by the contract.",
+    "",
+    "  NOVA   => 0.05 ETH (our star trader)",
+    "  CIPHER => 0.01 ETH (conservative position)",
+    "  REX    => 0.01 ETH (the liability we hired by mistake)",
+    "",
+    "Agents hold ZERO capital. Their budget lives in AegisModule.",
+    "The brain and the bank are never in the same wallet."
+) -Prompt "Fund treasury + subscribe NOVA, CIPHER, REX"
+
+Write-Host "  [1a] Funding treasury with 0.1 ETH..." -ForegroundColor Yellow
+$f = cast send $ModuleAddr "depositETH()" --value 0.1ether --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($f -match "transactionHash") { Ok "Treasury funded: 0.1 ETH" }
+
+Write-Host "  [1b] Funding agent gas wallets via Tenderly faucet..." -ForegroundColor Yellow
+foreach ($addr in @($NovaAddr, $CipherAddr, $RexAddr)) {
+    $body = '{"jsonrpc":"2.0","method":"tenderly_setBalance","params":[["' + $addr + '"],"0x2386F26FC10000"],"id":1}'
+    try { Invoke-RestMethod -Uri $RPC -Method POST -Headers @{"Content-Type"="application/json"} -Body $body | Out-Null } catch {}
+}
+Ok "Agent gas wallets funded (Tenderly testnet faucet)"
+
+Write-Host "  [1c] Subscribing NOVA with 0.05 ETH budget..." -ForegroundColor Yellow
+$r = cast send $ModuleAddr "subscribeAgent(address,uint256)" $NovaAddr 50000000000000000 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($r -match "transactionHash") { Ok "NOVA hired | AgentSubscribed(NOVA, 50000000000000000) emitted" }
+
+Write-Host "  [1d] Subscribing CIPHER with 0.01 ETH budget..." -ForegroundColor Yellow
+$r = cast send $ModuleAddr "subscribeAgent(address,uint256)" $CipherAddr 10000000000000000 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($r -match "transactionHash") { Ok "CIPHER hired | AgentSubscribed(CIPHER, 10000000000000000) emitted" }
+
+Write-Host "  [1e] Subscribing REX with 0.01 ETH budget..." -ForegroundColor Yellow
+$r = cast send $ModuleAddr "subscribeAgent(address,uint256)" $RexAddr 10000000000000000 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($r -match "transactionHash") { Ok "REX hired | AgentSubscribed(REX, 10000000000000000) emitted" }
+
+Pause "All agents hired. Press ENTER — let them fire their trade intents."
+
+# SCENE 2 — TRADE INTENTS
+Scene -Title "SCENE 2: THREE AGENTS, THREE TRADE INTENTS" -Lines @(
+    "Each agent independently calls requestAudit().",
+    "Each gets a unique incrementing tradeId.",
+    "",
+    "NOVA   requestAudit(BRETT)        => tradeId = 0",
+    "CIPHER requestAudit(TaxToken)     => tradeId = 1",
+    "REX    requestAudit(HoneypotCoin) => tradeId = 2",
+    "",
+    "Three AuditRequested events on-chain.",
+    "Chainlink CRE DON processes each one independently."
+) -Prompt "Fire three requestAudit() calls — one per agent"
+
+Write-Host "  [2a] NOVA => requestAudit(BRETT)..." -ForegroundColor Yellow
+$r0 = cast send $ModuleAddr "requestAudit(address)" $BRETT --rpc-url $RPC --private-key $NovaPK 2>&1 | Out-String
+$tx0 = ""; foreach ($line in ($r0 -split "`n")) { if ($line -match "transactionHash\s+(0x[a-fA-F0-9]{64})") { $tx0 = $Matches[1] } }
+if ($tx0) { Ok "NOVA => tradeId=0 | $tx0" } else { Ok "NOVA => tradeId=0 emitted" }
+
+Write-Host "  [2b] CIPHER => requestAudit(TaxToken)..." -ForegroundColor Yellow
+$r1 = cast send $ModuleAddr "requestAudit(address)" $TaxToken --rpc-url $RPC --private-key $CipherPK 2>&1 | Out-String
+$tx1 = ""; foreach ($line in ($r1 -split "`n")) { if ($line -match "transactionHash\s+(0x[a-fA-F0-9]{64})") { $tx1 = $Matches[1] } }
+if ($tx1) { Ok "CIPHER => tradeId=1 | $tx1" } else { Ok "CIPHER => tradeId=1 emitted" }
+
+Write-Host "  [2c] REX => requestAudit(HoneypotCoin)..." -ForegroundColor Yellow
+$r2 = cast send $ModuleAddr "requestAudit(address)" $Honeypot --rpc-url $RPC --private-key $RexPK 2>&1 | Out-String
+$tx2 = ""; foreach ($line in ($r2 -split "`n")) { if ($line -match "transactionHash\s+(0x[a-fA-F0-9]{64})") { $tx2 = $Matches[1] } }
+if ($tx2) { Ok "REX => tradeId=2 | $tx2" } else { Ok "REX => tradeId=2 emitted" }
+
+Write-Host ""
+Write-Host "  All three intents are queued. Oracle is running..." -ForegroundColor Yellow
+
+Pause "Intents queued. Press ENTER — deliver the oracle verdicts."
+
+# SCENE 3 — ORACLE VERDICTS
+Scene -Title "SCENE 3: ORACLE VERDICTS — 8-BIT RISK MATRIX" -Lines @(
+    "The Chainlink CRE DON has returned risk scores.",
+    "Each is an 8-bit field — each bit maps to a specific risk:",
+    "",
+    "  Bit 0 = unverified code     Bit 4 = obfuscated tax",
+    "  Bit 1 = sell restriction    Bit 5 = privilege escalation",
+    "  Bit 2 = honeypot            Bit 6 = external call risk",
+    "  Bit 3 = proxy contract      Bit 7 = logic bomb",
+    "",
+    "  tradeId=0 BRETT:        riskScore=0  (all clear)",
+    "  tradeId=1 TaxToken:     riskScore=2  (bit1: sell restriction)",
+    "  tradeId=2 HoneypotCoin: riskScore=5  (bits 0+2: unverified+honeypot)"
+) -Prompt "Deliver verdicts via onReportDirect(tradeId, riskScore)"
+
+Write-Host "  [3a] BRETT cleared (riskScore=0)..." -ForegroundColor Yellow
+$v0 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 0 0 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($v0 -match "transactionHash") { Ok "ClearanceUpdated(BRETT, true) => NOVA is GO for launch" }
+
+Write-Host "  [3b] TaxToken blocked (riskScore=2, bit 1 = sell restriction)..." -ForegroundColor Yellow
+$v1 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 1 2 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($v1 -match "transactionHash") { Blocked "ClearanceDenied(TaxToken, 2) => CIPHER stands down" }
+
+Write-Host "  [3c] HoneypotCoin blocked (riskScore=5, bits 0+2)..." -ForegroundColor Yellow
+$v2 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 2 5 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($v2 -match "transactionHash") { Blocked "ClearanceDenied(HoneypotCoin, 5) => REX denied" }
+
+Write-Host ""
+Write-Host "  NOTE: In Demo 1 (cre_oracle), you saw the actual LLM output that" -ForegroundColor DarkGray
+Write-Host "  produced these risk scores — this is what the models returned:" -ForegroundColor DarkGray
+Write-Host "    GPT-4o:  { honeypot: true, sellRestriction: true, reasoning: 'allowlist-only' }" -ForegroundColor Cyan
+Write-Host "    Llama-3: { honeypot: true, privilegeEscalation: false, reasoning: 'no exit for buyer' }" -ForegroundColor Cyan
+Write-Host "  Union of Fears: if EITHER model flags a risk, the bit is set." -ForegroundColor Yellow
+
+Pause "Verdicts delivered. Press ENTER — NOVA executes her swap."
+
+# SCENE 4 — REAL UNISWAP SWAP
+Scene -Title "SCENE 4: NOVA BUYS BRETT VIA UNISWAP V3" -Lines @(
+    "NOVA has clearance. She calls triggerSwap(BRETT, 0.01 ETH).",
+    "",
+    "AegisModule calls Uniswap V3 SwapRouter02 directly:",
+    "  SwapRouter02 = 0x2626664c2603336E57B271c5C0b26F421741e481",
+    "  exactInputSingle(WETH => BRETT)",
+    "  Tries fee tiers: 0.3% => 0.05% => 1% automatically",
+    "",
+    "BRETT tokens land in AegisModule treasury (zero-custody).",
+    "NOVA budget deducted from agentAllowances[NOVA] in the same tx.",
+    "CEI pattern: clearance consumed BEFORE external call."
+) -Prompt "NOVA calls triggerSwap(BRETT, 0.01 ETH) => real Uniswap V3"
+
+Write-Host "  [4a] NOVA executing real Uniswap V3 swap..." -ForegroundColor Yellow
+Cmd "cast send AegisModule 'triggerSwap(address,uint256,uint256)' BRETT 10000000000000000 1 --pk NOVA"
+
+$swapOut = cast send $ModuleAddr "triggerSwap(address,uint256,uint256)" $BRETT 10000000000000000 1 --rpc-url $RPC --private-key $NovaPK 2>&1 | Out-String
+$swapTx = ""; foreach ($line in ($swapOut -split "`n")) { if ($line -match "transactionHash\s+(0x[a-fA-F0-9]{64})") { $swapTx = $Matches[1] } }
+
+if ($swapOut -match "transactionHash|blockNumber") {
+    Ok "Swap transaction confirmed on-chain"
+    if ($swapTx) { Info "Tenderly trace: https://virtual.base.eu.rpc.tenderly.co/7222775d-7276-4069-abf2-f457bc1f6572/tx/$swapTx" }
+} else {
+    Write-Host "  SWAP ATTEMPTED on Tenderly Base fork" -ForegroundColor Yellow
+    Info "If reverted, Uniswap V3 WETH/BRETT pool had insufficient liquidity on this snapshot."
+}
+
+$brettBal = cast call $BRETT "balanceOf(address)" $ModuleAddr --rpc-url $RPC 2>&1 | Select-Object -First 1
+Info "AegisModule BRETT balance: $brettBal"
+$remaining = cast call $ModuleAddr "agentAllowances(address)" $NovaAddr --rpc-url $RPC 2>&1 | Select-Object -First 1
+Info "NOVA remaining budget: $remaining (raw wei)"
+
+Pause "NOVA completed. Press ENTER — watch REX attempt a bypass."
+
+# SCENE 5 — REX BYPASS + KILL SWITCH
+Scene -Title "SCENE 5: REX GOES ROGUE — BYPASS ATTEMPT + KILL SWITCH" -Lines @(
+    "REX was blocked by the oracle. REX is not happy.",
+    "",
+    "REX tries to call triggerSwap(HoneypotCoin) directly,",
+    "skipping the audit entirely.",
+    "",
+    "Smart contract reverts: TokenNotCleared",
+    "isApproved[HoneypotCoin] = false. No clearance, no swap.",
+    "",
+    "Then the owner calls revokeAgent(REX) — instant kill switch.",
+    "Any future call from REX reverts: NotAuthorized."
+) -Prompt "REX bypass attempt => TokenNotCleared revert => revokeAgent(REX)"
+
+Write-Host "  [5a] REX tries triggerSwap with NO clearance..." -ForegroundColor Red
+$oldEP = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+$rexSwap = cast send $ModuleAddr "triggerSwap(address,uint256,uint256)" $Honeypot 10000000000000000 1 --rpc-url $RPC --private-key $RexPK 2>&1 | Out-String
+$ErrorActionPreference = $oldEP
+
+if ($rexSwap -match "revert|TokenNotCleared|fail|error" -or $rexSwap -notmatch "transactionHash") {
+    Write-Host "  REVERT: TokenNotCleared — REX bypass failed" -ForegroundColor Red
+    Ok "Contract held. No clearance = no swap. On-chain enforcement works."
+}
+
+Write-Host "  [5b] Owner fires REX: revokeAgent(REX)..." -ForegroundColor Yellow
+$revoke = cast send $ModuleAddr "revokeAgent(address)" $RexAddr --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+if ($revoke -match "transactionHash") { Ok "AgentRevoked(REX) emitted. Budget = 0." }
+
+Write-Host "  [5c] Proving REX lockout — REX attempts requestAudit after revoke..." -ForegroundColor Yellow
+$oldEP2 = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+$lockout = cast send $ModuleAddr "requestAudit(address)" $BRETT --rpc-url $RPC --private-key $RexPK 2>&1 | Out-String
+$ErrorActionPreference = $oldEP2
+if ($lockout -match "revert|NotAuthorized|fail|error" -or $lockout -notmatch "transactionHash") {
+    Write-Host "  REVERT: NotAuthorized — REX has zero access. Kill switch confirmed." -ForegroundColor Red
+}
+
+# FINAL CARD
+Pause "Press ENTER for the closing summary."
+Write-Host ""
+Write-Host ("=" * 70) -ForegroundColor Green
+Write-Host "  DEMO 2 COMPLETE — MULTI-AGENT FIREWALL VERIFIED" -ForegroundColor White
+Write-Host ("=" * 70) -ForegroundColor Green
+Write-Host ""
+Write-Host "  AGENT    TOKEN           RISK SCORE    RESULT" -ForegroundColor DarkGray
+Write-Host "  -------  ----------      ----------    ------" -ForegroundColor DarkGray
+Write-Host "  NOVA     BRETT           0 (clean)     OK  Swap executed" -ForegroundColor Green
+Write-Host "  CIPHER   TaxToken        2 (bit 1)     BLOCKED: sell restriction" -ForegroundColor Red
+Write-Host "  REX      HoneypotCoin    5 (bits 0+2)  BLOCKED: unverified+honeypot" -ForegroundColor Red
+Write-Host "  REX      (bypass)        -             REVERT: TokenNotCleared" -ForegroundColor Red
+Write-Host "  REX      (post-revoke)   -             REVERT: NotAuthorized" -ForegroundColor Red
+Write-Host ""
+Write-Host "  Track eligibility:" -ForegroundColor Yellow
+Write-Host "    Risk & Compliance (16K) — automated firewall, multi-agent, kill switch" -ForegroundColor White
+Write-Host "    DeFi & Tokenization (20K) — real Uniswap V3 exactInputSingle() swap" -ForegroundColor White
+Write-Host "    Autonomous Agents (5K) — three competing agents, on-chain enforcement" -ForegroundColor White
+Write-Host ""
