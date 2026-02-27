@@ -1,0 +1,55 @@
+# Aegis Protocol V4: Master TDD Execution Plan
+**Role:** Lead Web3 Protocol Engineer & Test-Driven Development (TDD) Purist.
+**Objective:** Migrate the Aegis Protocol to an ERC-7579 Executor Module using Account Abstraction (ERC-4337) and Smart Sessions (ERC-7715).
+
+## 🛑 Global Directives (NON-NEGOTIABLE)
+1. **Strict TDD:** You MUST write the test file *before* writing the implementation code.
+2. **Conditional Debugging:** If a test fails, you enter a "Debug Loop." You are forbidden from moving to the next task until the current test passes. If you cannot fix a failing test after 3 attempts, STOP and ask the human for architectural guidance.
+3. **The Ledger:** You must document every bug, fix, and architectural realization in `docs/lessons_learned.md` immediately after resolving it.
+4. **The Checkpoint Check-in:** Whenever you see `[CHECKPOINT]`, you must stop execution, summarize your work, commit to Git, and explicitly ask the human: "Ready to proceed to the next phase?"
+5. **Doc Browsing:** If you encounter syntax errors with `permissionless.js` or `ModuleKit`, you are explicitly authorized to use your web-browsing tool to read the latest documentation at `https://docs.pimlico.io` and `https://docs.rhinestone.wtf` to resolve API changes.
+
+---
+
+## Phase 0: Environment & Safety Initialization
+- [ ] 0.1 **Verify Context:** Read the `v3-reference/` folder to understand the legacy `AegisVault.sol`, `bot.ts`, and `aegis-oracle.ts` logic.
+- [ ] 0.2 **Documentation Setup:** Initialize `docs/lessons_learned.md` with a markdown table: `| Date | Component | Issue | Resolution |`.
+- [ ] 0.3 **Security Check:** Ensure `.env` is explicitly listed in `.gitignore`.
+- [ ] 0.4 **Scaffold Rhinestone:** Spawn a terminal and run `forge init --template rhinestone/module-template . --force`.
+- [ ] 0.5 **Install Dependencies:** Run `pnpm install` to pull down the ERC-7579 SDKs.
+- [ ] **[CHECKPOINT 0]** Execute `git add .` and `git commit -m "chore: initialize v4 TDD environment"`. Stop and wait for human confirmation.
+
+---
+
+## Phase 1: Smart Contract TDD (`AegisModule.sol`)
+*Context: We are building an ERC-7579 Executor Module. It holds ZERO funds.*
+
+- [ ] 1.1 **Write the Test First (`test/AegisModule.t.sol`):** - Import `ModuleKit`. 
+  - Write `setUp()` to deploy a mock Safe Account and install `AegisModule`.
+  - Write `test_requestAudit_emitsEvent()`: Simulate the Safe calling the module and verify `AuditRequested` is emitted.
+  - Write `test_onReport_executesSwap()`: Simulate the Chainlink CRE calling `onReport(0)`, verify the module successfully calls `executeFromExecutor` on the Safe.
+- [ ] 1.2 **Run Failing Tests:** Run `forge test --match-contract AegisModuleTest`. Verify the tests fail. Log this in `lessons_learned.md`.
+- [ ] 1.3 **Write Implementation (`src/AegisModule.sol`):**
+  - Inherit `ERC7579ExecutorBase`.
+  - Implement `requestAudit(address targetToken, uint256 amount)`.
+  - Implement `onReport()` matching the V3 logic, replacing the internal swap with `IERC7579Account(account).executeFromExecutor(...)`.
+- [ ] 1.4 **The Debug Loop:** Run `forge test`. Fix errors, update `lessons_learned.md`, and re-run until passing.
+- [ ] **[CHECKPOINT 1]** Execute `git commit -m "feat(contracts): implement and test AegisModule executor"`. Wait for human confirmation.
+
+---
+
+## Phase 2: Off-Chain Oracle Integration (`aegis-oracle.ts`)
+*Context: The Oracle logic stays the same; only the callback destination changes.*
+
+- [ ] 2.1 **Write the Mock Test (`test/oracle.spec.ts`):** Write a unit test that mocks `evmClient.writeReport()`. Assert the payload matches the new `AegisModule` ABI.
+- [ ] 2.2 **Update Implementation (`src/oracle/aegis-oracle.ts`):** - Copy `aegis-oracle.ts` from `v3-reference/`. Update the ABI and the target contract address injection.
+- [ ] 2.3 **The Debug Loop:** Run TS tests. If fail, debug and log.
+- [ ] **[CHECKPOINT 2]** Execute `git commit -m "feat(oracle): update CRE callback for V4 module ABI"`. Wait for human confirmation.
+
+---
+
+## Phase 3: The Agentic Plumber (`bot.ts` & Account Abstraction)
+*Context: The agent no longer signs standard transactions. It uses permissionless.js to sign ERC-4337 UserOperations via a Pimlico bundler.*
+
+- [ ] 3.1 **Install AA SDKs:** Run `pnpm add permissionless viem @rhinestone/module-sdk`.
+- [ ] 3.2 **Write the Test (`test/bot.spec.ts`):** Mock a Pimlico Bundler client. Write a test asserting the bot constructs an
