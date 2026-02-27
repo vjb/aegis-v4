@@ -1,0 +1,286 @@
+Smart Contract Verification
+Smart contract verification involves submitting the source code of your smart contracts to ensure that the deployed bytecode on the blockchain matches the source code provided. Verification is essential for Tenderly’s development tooling to work properly.
+
+Tenderly supports multiple verification methods.
+
+
+Dashboard
+
+Simple verifications with limited customization options.
+
+Foundry
+
+For developers using Foundry for smart contract development.
+
+Hardhat
+
+For developers who are already using Hardhat as their dev environment.
+
+Infrastructure compatibility
+Tenderly exposes an Etherscan-compliant verification API able to verify contracts that are deployed on:
+
+Public networks that are accessible through Node RPC
+Virtual TestNets
+Verification on Tenderly development infrastructure
+Tenderly development, staging, and testing infrastructure - Virtual TestNets, expose an RPC URL for access. To verify a smart contract on Virtual TestNets, you need to create a verifier URL by:
+
+adding /verify to the Virtual TestNet RPC URL,
+replacing the $TENDERLY_ACCOUNT and $TENDERLY_PROJECT with your account details. Follow this guide,
+adhering to the following formats, depending on the technology you’re using:
+example
+
+## For Virtual TestNets
+VERIFIER_URL=$TENDERLY_VIRTUAL_TESTNET_RPC/verify
+Examples:
+
+example
+
+## Virtual TestNets
+https://virtual.base.rpc.tenderly.co/872ac073-1de1-4422-b01d-8d057781d77d/verify
+Verification visibility modes
+You can verify contracts in two modes of visibility:
+
+Privately on public networks (mainnets and testnets). Your contracts will be verified only in your Tenderly project and organization.
+Publicly on public networks (mainnets and testnets). This is the default verification method.
+
+Verification mode	All Tenderly Users	Verifier Alliance	Project Collaborators	Organization Members
+Public verification
+on public mainnet and testnets	
+Private verification
+on public mainnet and testnets	
+TestNets	
+Configuring private verification
+When verifying with hardhat, it’s necessary to set the config.tenderly.private flag in hardhat.config.ts . Contracts will be verified publicly unless you specify this flag.
+
+When verifying with Foundry, the Verifier URL should end with /public:
+
+example
+
+## private verification URL
+https://api.tenderly.co/api/v1/account/me/project/project/etherscan/verify/network/8253
+ 
+## public verification URL
+https://api.tenderly.co/api/v1/account/me/project/project/etherscan/verify/network/8253/public
+The importance of smart contract verification
+Having your contracts verified unlocks powerful Tenderly tools designed to streamline your development process. If your smart contract is not verified either privately or publicly, your use of Tenderly tooling will be limited.
+
+Decoded transactions: Gain insights into transactions with decoded call traces, events, state changes, and gas usage.
+Debugging: Use decoded information for efficient debugging and transaction analysis, making it easier to identify and fix issues.
+Optimization opportunities: Access precise gas usage profiling to identify and implement optimizations, reducing costs and improving performance.
+Enhanced collaboration: Share verified contracts with team members and auditors securely to facilitate collaboration and speed up auditing processes.
+
+Foundry Contract Verification
+Foundry is a smart contract development toolchain. Foundry’s command line tool Forge tests, builds, and deploys smart contracts.
+
+Tenderly can verify smart contracts deployed with Foundry’s commands forge create, forge script or forge verify-contract. You can even use Tenderly’s development infrastructure and tools in conjunction with Foundry tooling.
+
+Use the --slow flag when running Foundry scripts to prevent transaction batching. With this, a transaction is sent only after it’s preceding transaction is confirmed.
+
+Verification URL
+All Foundry commands that support verification require the --verification-url argument.
+
+In this section you can find formats for verifier URLs on:
+
+Virtual TestNets
+Public networks (mainnets and testnets)
+Verification on public networks
+When verifying smart contracts on private or public networks, use the appropriate verifier URL. To verify publicly, your URL must end with /public.
+
+Private verification mode on public mainnets/testnets. The verification URL has the following structure:
+
+ 
+https://api.tenderly.co/api/v1/account/$TENDERLY_ACCOUNT/project/$TENDERLY_PROJECT/etherscan/verify/network/$NETWORK_ID
+
+Public verification mode on public mainnets/testnets. The verification URL has the following structure:
+
+ 
+https://api.tenderly.co/api/v1/account/$TENDERLY_ACCOUNT/project/$TENDERLY_PROJECT/etherscan/verify/network/$NETWORK_ID/public
+
+Quickstart
+In this quickstart, we’ll deploy and verify a smart contract on a Tenderly TestNet.
+
+Create a new Foundry project
+forge init hello_foundry
+
+Create a Virtual TestNet
+Create a new Virtual TestNet:
+
+Choose a chain and name your testnet
+Choose a custom chain ID (e.g. prepend 7357 to original chain’s ID)
+Click “Create”
+Extend foundry.toml
+For verification to succeed, it’s necessary to configure cbor_metadata=true in foundry.toml.
+
+Extend foundry.toml file to include the unknown_chain entry:
+
+key: Replace TENDERLY_ACCESS_KEY with Tenderly access token
+chain: Replace CHAIN_ID with your chain’s ID, especially if you created a Virtual TestNet with custom chain ID.
+url: The verification URL. Replace TENDERLY_VIRTUAL_TESTNET_RPC_URL with the TestNet RPC.
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+cbor_metadata = true
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+ 
+[etherscan]
+#                   Paste TENDERLY_ACCESS_TOKEN            Chain ID         Verifier URL: RPC_URL/verify
+unknown_chain = { key = "TENDERLY_ACCESS_KEY", chain = CHAIN_ID, url = "${TENDERLY_VIRTUAL_TESTNET_RPC_URL}/verify" }
+
+Set up environment variables
+Set up the following environment variables that hold:
+
+RPC URL
+Tenderly Verifier URL according to these formats
+Tenderly Access Token
+TENDERLY_VIRTUAL_TESTNET_RPC_URL=... # Virtual TestNet RPC URL
+TENDERLY_VERIFIER_URL=$TENDERLY_VIRTUAL_TESTNET_RPC_URL/verify
+ 
+TENDERLY_ACCESS_TOKEN= # paste your access key here
+
+Fund your account
+Use the TestNet’s unlimited faucet to set a new balance for any account on the network.
+
+The following command funds 0xE58b9ee93700A616b50509C8292977FA7a0f8ce1 that we’ll use throughout this example. Replace it with
+
+curl $TENDERLY_VIRTUAL_TESTNET_RPC_URL \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{
+    "jsonrpc": "2.0",
+    "method": "tenderly_setBalance",
+    "params": [["0xE58b9ee93700A616b50509C8292977FA7a0f8ce1"], "0xDE0B6B3A7640000"],
+    "id": "1234"
+}'
+
+Deploy and verify the contract
+Finally, deploy the contract using forge create.
+
+# Demo private key for address 0xE58b9ee93700A616b50509C8292977FA7a0f8ce1
+# Make sure to use the correct private key if using a different account.
+# Make sure your funded the account using tenderly_setBalance
+PRIVATE_KEY=0xbd3a24f40aa009e82b67af2ce17c9e2c794f1958d802c9481bc551ef76e8f03f
+ 
+forge create Counter \
+--rpc-url $TENDERLY_VIRTUAL_TESTNET_RPC_URL \
+--private-key $PRIVATE_KEY  \
+--verify \
+--verifier custom \
+--verifier-url $TENDERLY_VERIFIER_URL
+
+Verifying with Foundry
+In this section, you’ll find examples of how to run Foundry commands with Tenderly verification included.
+
+Check if you’ve set up your foundry.toml file for verification on Tenderly infrastructure.
+
+Deploy and verify contracts with forge create
+Verify your smart contract alongside the deployment with forge create, and use the following options:
+
+the contract name (Counter)
+--rpc-url with the RPC URL of the network
+--private-key and pass the deployer’s private key
+the --verify flag
+--verifier and set it to custom to use Tenderly’s verification service
+--verifier-url with the verification URL ($TENDERLY_VERIFIER_URL). Learn about the Verification URL.
+forge create Counter \
+    --rpc-url $TENDERLY_VIRTUAL_TESTNET_RPC_URL \
+    --private-key $PRIVATE_KEY  \
+    --verify \
+    --verifier custom \
+    --verifier-url $TENDERLY_VERIFIER_URL
+
+Verify existing contracts with forge verify-contract
+To verify a deployed contract, use forge verify-contract and use the following options:
+
+The contract address ($COUNTER_ADDRESS)
+The contract name (Counter)
+--watch to make the script await the verification status
+--verifier and set it to custom to use Tenderly’s verification service
+--verifier-url with the verification URL ($TENDERLY_VERIFIER_URL). Learn about the Verification URL.
+COUNTER_ADDRESS=0x...
+ 
+forge verify-contract $COUNTER_ADDRESS  \
+Counter \
+--verifier custom \
+--verifier-url $TENDERLY_VERIFIER_URL \
+--watch
+
+Verify contracts from Foundry scripts with forge script
+When your Foundry scripts include contract deployments, you can opt-in to get them verified when you run the script.
+
+Use the following options to forge script:
+
+The fully qualified path to the Solidity class containing the script (script/Counter.s.sol:CounterScript)
+--rpc-url with the RPC URL of the network
+the --verify flag
+--verifier and set it to custom to use Tenderly’s verification service
+--verifier-url with the verification URL ($TENDERLY_VERIFIER_URL) in one of these formats.
+Use the --slow flag when running Foundry scripts to prevent transaction batching. With this, a transaction is sent only after it’s preceding transaction is confirmed.
+
+# Demo private key for address 0xE58b9ee93700A616b50509C8292977FA7a0f8ce1
+# Make sure to use the correct private key if using a different account
+# Make sure your funded the account using tenderly_setBalance
+PRIVATE_KEY=0xbd3a24f40aa009e82b67af2ce17c9e2c794f1958d802c9481bc551ef76e8f03f
+ 
+forge script script/Counter.s.sol:CounterScript \
+--rpc-url $TENDERLY_VIRTUAL_TESTNET_RPC_URL \
+--private-key $PRIVATE_KEY  \
+--broadcast \
+--verify \
+--verifier custom \
+--verifier-url $TENDERLY_VERIFIER_URL \
+--slow
+
+FAQ: Contract Verification
+I verified my contract publicly but want it to be private. Can I remove the public verification of the contract?
+To revert your contract back to private and visible only within your project, please contact our support team via the contact our support team or support@tenderly.co. Make sure to provide your username, project, and contract address. Our team will then delete the public verification for the specified contract.
+
+How do I privately verify contracts from public networks (Mainnet, Holesky, etc.) in Tenderly?
+Private verification means that contracts will be visible only to Tenderly users who have access to your project.
+
+When verifying with hardhat, it’s necessary to set the config.tenderly.private flag in hardhat.config.ts . Contracts will be verified publicly unless you specify this flag.
+When verifying with Foundry, the Verifier URL should end with /public:
+## private verification URL
+https://api.tenderly.co/api/v1/account/me/project/project/etherscan/verify/network/8253
+ 
+## public verification URL
+https://api.tenderly.co/api/v1/account/me/project/project/etherscan/verify/network/8253/public
+
+If I publicly verify a contract on Tenderly, will it still be visible after I delete it from my contracts?
+Yes, publicly verified contracts remain visible even after you delete them from your list of contracts. To ensure your contracts are visible only within your project, you can use private verification instead. Learn more about different verification types and the verification process.
+
+How can I verify contracts with hardhat-ignition?
+Deploy using hardhat ignition deploy and be sure to add --deployment-id with a specific value when running the command.
+
+TENDERLY_AUTOMATIC_VERIFICATION=true \
+npx hardhat ignition deploy ./ignition/modules/Lock.ts \
+    --network virtual_base \
+    --deployment-id deploy-to-virtual-base
+
+How do I verify contracts automatically with harhdat-tenderly plugin?
+For versions >= 2.4.0 and >=1.10.0, the plugin recognizes the environment variable TENDERLY_AUTOMATIC_VERIFICATION. Use it to switch automatic verification on or off. Example:
+
+bash.sh
+
+TENDERLY_AUTOMATIC_VERIFICATION=true npx hardhat deploy
+For versions < 2.4.0 and < 1.10.0, you must call tenderly.setup in hardhat.config.ts in the following way to control automatic verification.
+
+hardhat.config.js
+
+tenderly.setup({ automaticVerifications: !!process.env.TENDERLY_AUTOMATIC_VERIFICATION })
+Do I need to call tenderly.setup() in hardhat.config.ts?
+Starting from 2.4.0 and 1.10.0, you don’t need to call tenderly.setup method.
+
+How should I name networks in hardhat.config.ts?
+Public networks can have any name.
+For Virtual TestNets, depending on the version of @tenderly/hardhat-tenderly:
+
+network name must be tenderly with versions < 2.4.0 and < 1.10.0.
+network name can be arbitrary, with versions >= 2.4.0 and >= 1.10.0.
+How do I verify proxy contracts in Hardhat?
+Automatic verification of proxy contracts works out of the box with versions >= 2.1.0 and >= 1.10.0.
+For versions versions < 2.4.0 and < 1.10.0, follow the automatic proxy verification workaround.
+To avoid the workaround:
+upgrade.sh
+
+npm update @tenderly/hardhat-tenderly
