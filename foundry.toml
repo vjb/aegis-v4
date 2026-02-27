@@ -26,4 +26,4 @@ tab_width = 4
 wrap_comments = true
 
 [etherscan]
-unknown_chain = { key = "${TENDERLY_KEY}", chain = 8453, url = "https://virtual.base.eu.rpc.tenderly.co/7222775d-7276-4069-abf2-f457bc1f6572/verify/etherscan" }
+unknown_chain = { key = "${TENDERLY_KEY}", chain = 73578453, url = "https://virtual.base.eu.rpc.tenderly.co/fbbf0f8d-8827-488f-8289-5ee7872695d8/verify" }

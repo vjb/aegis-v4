@@ -133,7 +133,7 @@ Write-Host "`n5. Deploying AegisModule (ERC-7579 Executor)..." -ForegroundColor 
 
 # The KeystoneForwarder address on Base mainnet (via Tenderly fork)
 # Replace with the actual deployed KeystoneForwarder address from Chainlink CRE
-$KeystoneForwarder = "0x0000000000000000000000000000000000000001"
+$KeystoneForwarder = "0x109D8072B1762263ed094BC05c5110895Adc65Cf"
 
 $env:TENDERLY_ACCESS_KEY    = $TenderlyKey
 $env:FOUNDRY_DISABLE_NIGHTLY_WARNING = "true"

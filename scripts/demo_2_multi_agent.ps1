@@ -38,6 +38,11 @@ $BRETT    = "0x532f27101965dd16442E59d40670FaF5eBB142E4"
 $TaxToken = "0x000000000000000000000000000000000000000c"
 $Honeypot = "0x000000000000000000000000000000000000000b"
 
+# Read nextTradeId from chain so repeated runs always use correct IDs
+$rawId = (cast call $ModuleAddr "nextTradeId()" --rpc-url $RPC 2>&1 | Select-Object -First 1).Trim()
+$baseId = [int]([System.Convert]::ToInt64($rawId, 16))
+$id0 = $baseId; $id1 = $baseId + 1; $id2 = $baseId + 2
+
 function Banner($text, $color = "Cyan") {
     Write-Host ""; Write-Host ("=" * 70) -ForegroundColor $color
     Write-Host "  $text" -ForegroundColor White
@@ -172,16 +177,16 @@ Scene -Title "SCENE 3: ORACLE VERDICTS — 8-BIT RISK MATRIX" -Lines @(
     "  tradeId=2 HoneypotCoin: riskScore=5  (bits 0+2: unverified+honeypot)"
 ) -Prompt "Deliver verdicts via onReportDirect(tradeId, riskScore)"
 
-Write-Host "  [3a] BRETT cleared (riskScore=0)..." -ForegroundColor Yellow
-$v0 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 0 0 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+Write-Host "  [3a] BRETT cleared (tradeId=$id0, riskScore=0)..." -ForegroundColor Yellow
+$v0 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" $id0 0 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
 if ($v0 -match "transactionHash") { Ok "ClearanceUpdated(BRETT, true) => NOVA is GO for launch" }
 
-Write-Host "  [3b] TaxToken blocked (riskScore=2, bit 1 = sell restriction)..." -ForegroundColor Yellow
-$v1 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 1 2 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+Write-Host "  [3b] TaxToken blocked (tradeId=$id1, riskScore=2, bit 1 = sell restriction)..." -ForegroundColor Yellow
+$v1 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" $id1 2 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
 if ($v1 -match "transactionHash") { Blocked "ClearanceDenied(TaxToken, 2) => CIPHER stands down" }
 
-Write-Host "  [3c] HoneypotCoin blocked (riskScore=5, bits 0+2)..." -ForegroundColor Yellow
-$v2 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 2 5 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+Write-Host "  [3c] HoneypotCoin blocked (tradeId=$id2, riskScore=5, bits 0+2)..." -ForegroundColor Yellow
+$v2 = cast send $ModuleAddr "onReportDirect(uint256,uint256)" $id2 5 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
 if ($v2 -match "transactionHash") { Blocked "ClearanceDenied(HoneypotCoin, 5) => REX denied" }
 
 Write-Host ""

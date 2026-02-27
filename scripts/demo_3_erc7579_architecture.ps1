@@ -39,6 +39,10 @@ $SafeToken = "0x000000000000000000000000000000000000000a"  # UnverifiedDoge — 
 
 $TenderlyExplorer = "https://virtual.base.eu.rpc.tenderly.co/7222775d-7276-4069-abf2-f457bc1f6572"
 
+# Read nextTradeId from chain so repeated runs always use the correct tradeId
+$rawId = (cast call $ModuleAddr "nextTradeId()" --rpc-url $RPC 2>&1 | Select-Object -First 1).Trim()
+$tradeId = [int]([System.Convert]::ToInt64($rawId, 16))
+
 function Banner($text, $color = "Cyan") {
     Write-Host ""; Write-Host ("=" * 70) -ForegroundColor $color
     Write-Host "  $text" -ForegroundColor White
@@ -178,7 +182,7 @@ Cmd "cast send AegisModule 'requestAudit(address)' 0x000000000000000000000000000
 $audit = cast send $ModuleAddr "requestAudit(address)" $SafeToken --rpc-url $RPC --private-key $PhantomPK 2>&1 | Out-String
 $auditTx = ""; foreach ($line in ($audit -split "`n")) { if ($line -match "transactionHash\s+(0x[a-fA-F0-9]{64})") { $auditTx = $Matches[1] } }
 if ($auditTx) {
-    Ok "AuditRequested(tradeId=0, PHANTOM, SafeToken, firewallConfig) emitted"
+    Ok "AuditRequested(tradeId=$tradeId, PHANTOM, SafeToken, firewallConfig) emitted"
     Info "Tx: $auditTx"
     Info "Tenderly: $TenderlyExplorer/tx/$auditTx"
     Tag "Open Tenderly now — you should see AuditRequested decoded in the Events tab"
@@ -187,8 +191,8 @@ if ($auditTx) {
 }
 
 # Verify trade stored
-$tradeInfo = cast call $ModuleAddr "getTradeRequest(uint256)" 0 --rpc-url $RPC 2>&1 | Out-String
-Info "getTradeRequest(0): $($tradeInfo.Trim())"
+$tradeInfo = cast call $ModuleAddr "getTradeRequest(uint256)" $tradeId --rpc-url $RPC 2>&1 | Out-String
+Info "getTradeRequest($tradeId): $($tradeInfo.Trim())"
 
 Pause "Audit request stored. Press ENTER — deliver the oracle clearance."
 
@@ -208,8 +212,8 @@ Scene -Title "SCENE 4: ORACLE CLEARS => SWAP EXECUTES" -Lines @(
     "Watch Tenderly for the full call trace into Uniswap."
 ) -Prompt "onReportDirect(0, 0) => clearance => triggerSwap(SafeToken, 0.01 ETH)"
 
-Write-Host "  [4a] Owner delivers oracle clearance (riskScore=0)..." -ForegroundColor Yellow
-$report = cast send $ModuleAddr "onReportDirect(uint256,uint256)" 0 0 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
+Write-Host "  [4a] Owner delivers oracle clearance (tradeId=$tradeId, riskScore=0)..." -ForegroundColor Yellow
+$report = cast send $ModuleAddr "onReportDirect(uint256,uint256)" $tradeId 0 --rpc-url $RPC --private-key $PK 2>&1 | Out-String
 if ($report -match "transactionHash") { Ok "ClearanceUpdated(SafeToken, true) emitted" }
 $isApproved = cast call $ModuleAddr "isApproved(address)" $SafeToken --rpc-url $RPC 2>&1 | Select-Object -First 1
 Info "isApproved[SafeToken] = $isApproved  (expected: 0x01 = true)"

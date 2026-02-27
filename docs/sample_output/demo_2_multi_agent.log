@@ -1,0 +1,77 @@
+
+======================================================================
+  AEGIS PROTOCOL V4  *  DEMO 2: THE FIREWALL THAT RUNS ITSELF
+======================================================================
+
+  Targets:  Risk & Compliance (16K) | DeFi & Tokenization (20K)
+
+  Three AI agents. Three trade intents. One firewall.
+  No human approval. The Chainlink CRE oracle IS the compliance desk.
+
+  NOVA   (0.05 ETH budget) => wants BRETT        => CLEARED => real swap
+  CIPHER (0.01 ETH budget) => wants TaxToken     => BLOCKED (riskScore=2)
+  REX    (0.01 ETH budget) => wants HoneypotCoin => BLOCKED (riskScore=5) + bypass revert
+
+  AegisModule: 0x46d40e0aBdA0814bb0CB323B2Bb85a129d00B0AC
+
+  [1a] Funding treasury with 0.1 ETH...
+  OK  Treasury funded: 0.1 ETH
+  [1b] Funding agent gas wallets via Tenderly faucet...
+  OK  Agent gas wallets funded (Tenderly testnet faucet)
+  [1c] Subscribing NOVA with 0.05 ETH budget...
+  OK  NOVA hired | AgentSubscribed(NOVA, 50000000000000000) emitted
+  [1d] Subscribing CIPHER with 0.01 ETH budget...
+  OK  CIPHER hired | AgentSubscribed(CIPHER, 10000000000000000) emitted
+  [1e] Subscribing REX with 0.01 ETH budget...
+  OK  REX hired | AgentSubscribed(REX, 10000000000000000) emitted
+  [2a] NOVA => requestAudit(BRETT)...
+  OK  NOVA => tradeId=0 | 0xfd7c6621edc89ebf0c26086078c1fcbfba2692261917dbf08034caefd9254a40
+  [2b] CIPHER => requestAudit(TaxToken)...
+  OK  CIPHER => tradeId=1 | 0x1f780641436c28f59f0e92fdaa3fd209656d4c787c503990a081059ade165f72
+  [2c] REX => requestAudit(HoneypotCoin)...
+  OK  REX => tradeId=2 | 0x28bd83a6fbe1f568106497c518799274042435645a3d8ac1a028e05e277dfcca
+
+  All three intents are queued. Oracle is running...
+  [3a] BRETT cleared (tradeId=1, riskScore=0)...
+  OK  ClearanceUpdated(BRETT, true) => NOVA is GO for launch
+  [3b] TaxToken blocked (tradeId=2, riskScore=2, bit 1 = sell restriction)...
+  BLOCKED  ClearanceDenied(TaxToken, 2) => CIPHER stands down
+  [3c] HoneypotCoin blocked (tradeId=3, riskScore=5, bits 0+2)...
+  BLOCKED  ClearanceDenied(HoneypotCoin, 5) => REX denied
+
+  NOTE: In Demo 1 (cre_oracle), you saw the actual LLM output that
+  produced these risk scores — this is what the models returned:
+    GPT-4o:  { honeypot: true, sellRestriction: true, reasoning: 'allowlist-only' }
+    Llama-3: { honeypot: true, privilegeEscalation: false, reasoning: 'no exit for buyer' }
+  Union of Fears: if EITHER model flags a risk, the bit is set.
+  [4a] NOVA executing real Uniswap V3 swap...
+  >   cast send AegisModule 'triggerSwap(address,uint256,uint256)' BRETT 10000000000000000 1 --pk NOVA
+  OK  Swap transaction confirmed on-chain
+  >>  Tenderly trace: https://virtual.base.eu.rpc.tenderly.co/7222775d-7276-4069-abf2-f457bc1f6572/tx/0x57aaeb09e390d7864aec8ef04a9aed15bfe676bc2318c16b814fed5ef45e8265
+  >>  AegisModule BRETT balance: 0x000000000000000000000000000000000000000000000095e9f8051a346764d9
+  >>  NOVA remaining budget: 0x000000000000000000000000000000000000000000000000008e1bc9bf040000 (raw wei)
+  [5a] REX tries triggerSwap with NO clearance...
+  REVERT: TokenNotCleared — REX bypass failed
+  OK  Contract held. No clearance = no swap. On-chain enforcement works.
+  [5b] Owner fires REX: revokeAgent(REX)...
+  OK  AgentRevoked(REX) emitted. Budget = 0.
+  [5c] Proving REX lockout — REX attempts requestAudit after revoke...
+  REVERT: NotAuthorized — REX has zero access. Kill switch confirmed.
+
+======================================================================
+  DEMO 2 COMPLETE — MULTI-AGENT FIREWALL VERIFIED
+======================================================================
+
+  AGENT    TOKEN           RISK SCORE    RESULT
+  -------  ----------      ----------    ------
+  NOVA     BRETT           0 (clean)     OK  Swap executed
+  CIPHER   TaxToken        2 (bit 1)     BLOCKED: sell restriction
+  REX      HoneypotCoin    5 (bits 0+2)  BLOCKED: unverified+honeypot
+  REX      (bypass)        -             REVERT: TokenNotCleared
+  REX      (post-revoke)   -             REVERT: NotAuthorized
+
+  Track eligibility:
+    Risk & Compliance (16K) — automated firewall, multi-agent, kill switch
+    DeFi & Tokenization (20K) — real Uniswap V3 exactInputSingle() swap
+    Autonomous Agents (5K) — three competing agents, on-chain enforcement
+
