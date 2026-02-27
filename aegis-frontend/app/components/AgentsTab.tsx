@@ -195,7 +195,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
                 <div>
                     <h2 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Managed Agents</h2>
                     <p className="mono text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
