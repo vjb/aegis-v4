@@ -86,9 +86,10 @@ See: [`docs/sample_output/demo_1_cre_oracle.txt`](docs/sample_output/demo_1_cre_
 **What it shows:** Three AI agents, three simultaneous trade intents, real CRE oracle for every one.
 
 - `NOVA` → BRETT → CRE: Risk Code 0 → `ClearanceUpdated(BRETT, true)` → real Uniswap V3 swap ✅
-- `CIPHER` → TaxToken → CRE: sell restriction detected → `ClearanceDenied` ⛔ *(firewall working correctly)*
-- `REX` → HoneypotCoin → CRE: honeypot detected → `ClearanceDenied` ⛔ *(firewall working correctly)*
-- REX then tries to bypass the block → `triggerSwap()` reverts with `TokenNotCleared` ✅
+- `CIPHER` → TaxToken → CRE: Risk Code 18 (sell restriction + obfuscated tax) → `ClearanceDenied` ⛔
+- `REX` → HoneypotCoin → CRE: Risk Code 36 (honeypot + privilege escalation by AI) → `ClearanceDenied` ⛔
+- REX tries bypass → `triggerSwap()` reverts `TokenNotCleared` ✅
+- Owner fires REX → `revokeAgent(REX)` → any REX call reverts `NotAuthorized` ✅
 
 See: [`docs/sample_output/demo_2_multi_agent.txt`](docs/sample_output/demo_2_multi_agent.txt)
 
@@ -147,8 +148,10 @@ aegis-v4/
 │   └── bot.spec.ts                  # ← 6 Jest tests (calldata, BYOA safety)
 │
 ├── docs/
-│   ├── ERC7579_ROADMAP.md           # ← Architecture deep-dive
-│   ├── lessons_learned.md           # ← Engineering ledger (bugs + fixes)
+│   ├── ARCHITECTURE.md              # ← System architecture (12 Mermaid diagrams)
+│   ├── CONFIDENTIAL_HTTP.md         # ← Privacy track: ConfidentialHTTPClient deep-dive
+│   ├── DEMO_GUIDE.md                # ← How to run demos, what judges see
+│   ├── LESSONS_LEARNED.md           # ← Engineering ledger (bugs + fixes)
 │   └── sample_output/               # ← Real CRE oracle log files from demo runs
 │
 └── docker-compose.yaml              # ← CRE oracle Docker environment
@@ -252,7 +255,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture deep-
 | 2 | Honeypot | GoPlus |
 | 3 | Proxy contract | GoPlus |
 | 4 | Obfuscated tax | AI (GPT-4o + Llama-3) |
-| 5 | Privilege escalation | AI |
+| 5 | Privilege escalation / transfer allowlist honeypot | AI |
 | 6 | External call risk | AI |
 | 7 | Logic bomb | AI |
 

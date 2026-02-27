@@ -49,12 +49,8 @@ Updates the CRE node config and starts the Chainlink CRE Docker environment.
 1. Reads `TENDERLY_RPC_URL` and `AEGIS_MODULE_ADDRESS` from `.env`
 2. Updates `cre-node/config.json` with current module address
 3. Starts `docker compose up --build -d`
-4. Tails container logs
-
-**First time only:** After starting, run inside Docker:
-```bash
-docker exec aegis-oracle-node bash -c "cd /app && bun x cre-setup"
-```
+4. The `entrypoint.sh` automatically runs `bun x cre-setup` on first container start (compiles WASM plugin)
+5. Tails container logs — watch for `✅ CRE TS SDK is ready to use.`
 
 ---
 

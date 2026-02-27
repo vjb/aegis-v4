@@ -43,10 +43,16 @@ When `AegisModule.requestAudit(token)` is called on-chain, the CRE workflow:
 
 ## Running the Oracle
 
-### First time only
+### Start the oracle
 ```bash
 docker compose up --build -d
-docker exec aegis-oracle-node bash -c "cd /app && bun x cre-setup"
+# entrypoint.sh automatically runs bun x cre-setup on first start
+# Watch for: ✅ CRE TS SDK is ready to use.
+```
+
+### Subsequent starts (after first-time setup)
+```bash
+docker compose up -d
 ```
 
 ### Register secrets (once per CRE installation)
@@ -94,7 +100,7 @@ Bit 1 — Sell restriction        (GoPlus)
 Bit 2 — Honeypot                (GoPlus)
 Bit 3 — Proxy contract          (GoPlus)
 Bit 4 — Obfuscated tax          (AI consensus — GPT-4o + Llama-3)
-Bit 5 — Privilege escalation    (AI consensus)
+Bit 5 — Privilege escalation    (AI consensus — incl. transfer allowlist honeypot patterns)
 Bit 6 — External call risk      (AI consensus)
 Bit 7 — Logic bomb              (AI consensus)
 ```

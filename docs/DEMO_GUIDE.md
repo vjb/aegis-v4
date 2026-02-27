@@ -28,10 +28,9 @@ cp .env.example .env
 .\scripts\new_tenderly_testnet.ps1
 
 # 3. Start the Chainlink CRE Docker oracle node
+#    cre-setup runs automatically on first container start (entrypoint.sh)
 .\scripts\start_oracle.ps1
-
-# 4. First-time only: compile the WASM plugin inside Docker
-docker exec aegis-oracle-node bash -c "cd /app && bun x cre-setup"
+# Watch for: ✅ CRE TS SDK is ready to use.
 ```
 
 ---
@@ -124,7 +123,7 @@ Three autonomous agents simultaneously submit trade intents. The CRE oracle audi
 |---|---|---|---|
 | `NOVA` | BRETT (real Base token) | ✅ Risk Code 0 → Swap executes | GoPlus + GPT-4o + Llama-3 all clear |
 | `CIPHER` | TaxToken (mock, 99% hidden fee) | ⛔ Risk Code 18 → BLOCKED | **GPT-4o + Llama-3** flag obfuscated tax |
-| `REX` | HoneypotCoin (mock, transfer lock) | ⛔ Risk Code 36 → BLOCKED | **GPT-4o** flags privilege escalation |
+| `REX` | HoneypotCoin (mock, transfer allowlist) | ⛔ Risk Code 36 → BLOCKED | GoPlus (honeypot, bit 2) + **GPT-4o + Llama-3** (privilege escalation, bit 5) |
 
 ### AI Reasoning in the Logs (TaxToken)
 

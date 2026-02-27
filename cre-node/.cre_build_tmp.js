@@ -15847,7 +15847,7 @@ var performAIAnalysis = (nodeRuntime, input) => {
     openAiKey,
     groqKey
   } = input;
-  let obfuscatedTax = 0, privilegeEscalation = 0, externalCallRisk = 0, logicBomb = 0, honeypotPattern = 0;
+  let obfuscatedTax = 0, privilegeEscalation = 0, externalCallRisk = 0, logicBomb = 0;
   const confidentialClient = new ClientCapability2;
   const mockData = MOCK_REGISTRY[targetAddress];
   let sourceCode = "";
@@ -15897,10 +15897,9 @@ var performAIAnalysis = (nodeRuntime, input) => {
 
 Return ONLY a valid JSON object with these exact boolean keys plus a reasoning string:
   obfuscatedTax: TRUE only if there is a hidden fee >  ${maxTax}% deducted inside _transfer/_update that is NOT clearly named 'tax' or 'fee'. Standard Ownable, renounceOwnership, or royalty logic is NOT a tax.
-  privilegeEscalation: TRUE only if the owner can drain ALL user balances, mint unlimited tokens with no cap, or permanently freeze ALL transfers via a hidden backdoor. Standard OpenZeppelin Ownable (transferOwnership/renounceOwnership) is NORMAL BEST PRACTICE and is NOT privilege escalation.
+  privilegeEscalation: TRUE if EITHER: (a) the owner can drain ALL user balances, mint unlimited tokens with no cap, or permanently freeze ALL transfers via a hidden backdoor; OR (b) the contract restricts transfers to an owner-controlled allowlist/whitelist so that non-approved users cannot sell their tokens. Standard OpenZeppelin Ownable (transferOwnership/renounceOwnership) is NOT privilege escalation.
   externalCallRisk: TRUE only if transfer logic makes unguarded calls to arbitrary user-controlled addresses that could re-enter and drain funds.
   logicBomb: TRUE only if there is a time-locked or block-based trigger that will disable transfers or steal funds in the future.
-  honeypotPattern: TRUE if the contract restricts token transfers to an owner-controlled allowlist or whitelist, making it impossible for non-approved users to sell their tokens (transfer whitelist / sell restriction honeypot pattern).
   reasoning: one sentence summary.
 
 Firewall: maxTax=${maxTax}%, blockProxies=${blockProxies}, blockHoneypots=${blockHoneypots}.
@@ -15940,9 +15939,7 @@ ${sourceCode}`;
         externalCallRisk = 1;
       if (r.logicBomb)
         logicBomb = 1;
-      if (r.honeypotPattern)
-        honeypotPattern = 1;
-      nodeRuntime.log(`[GPT-4o] Risk bits → tax=${r.obfuscatedTax} priv=${r.privilegeEscalation} extCall=${r.externalCallRisk} bomb=${r.logicBomb} honeypot=${r.honeypotPattern}`);
+      nodeRuntime.log(`[GPT-4o] Risk bits → tax=${r.obfuscatedTax} priv=${r.privilegeEscalation} extCall=${r.externalCallRisk} bomb=${r.logicBomb}`);
       nodeRuntime.log(`[GPT-4o] Reasoning: ${String(r.reasoning).slice(0, 700)}`);
     } else {
       nodeRuntime.log(`[GPT-4o] ERROR HTTP ${openAiRes.statusCode}`);
@@ -15978,18 +15975,16 @@ ${sourceCode}`;
         externalCallRisk = 1;
       if (r.logicBomb)
         logicBomb = 1;
-      if (r.honeypotPattern)
-        honeypotPattern = 1;
-      nodeRuntime.log(`[Llama-3] Risk bits → tax=${r.obfuscatedTax} priv=${r.privilegeEscalation} extCall=${r.externalCallRisk} bomb=${r.logicBomb} honeypot=${r.honeypotPattern}`);
+      nodeRuntime.log(`[Llama-3] Risk bits → tax=${r.obfuscatedTax} priv=${r.privilegeEscalation} extCall=${r.externalCallRisk} bomb=${r.logicBomb}`);
       nodeRuntime.log(`[Llama-3] Reasoning: ${String(r.reasoning).slice(0, 700)}`);
     } else {
       nodeRuntime.log(`[Llama-3] ERROR HTTP ${groqRes.statusCode}`);
     }
-    nodeRuntime.log(`[AI] Union of Fears → obfuscatedTax=${obfuscatedTax} privilegeEscalation=${privilegeEscalation} externalCallRisk=${externalCallRisk} logicBomb=${logicBomb} honeypotPattern=${honeypotPattern}`);
+    nodeRuntime.log(`[AI] Union of Fears → obfuscatedTax=${obfuscatedTax} privilegeEscalation=${privilegeEscalation} externalCallRisk=${externalCallRisk} logicBomb=${logicBomb}`);
   } else {
     nodeRuntime.log(`[AI] SKIPPED — no source code for ${targetAddress} (unverified contract, bit 0 set)`);
   }
-  return { obfuscatedTax, privilegeEscalation, externalCallRisk, logicBomb, honeypotPattern };
+  return { obfuscatedTax, privilegeEscalation, externalCallRisk, logicBomb };
 };
 var onAuditTrigger = (runtime2, log) => {
   runtime2.log("\uD83D\uDEE1️ AegisModule V4 | AuditRequested intercepted");
@@ -16048,8 +16043,7 @@ var onAuditTrigger = (runtime2, log) => {
     obfuscatedTax: median,
     privilegeEscalation: median,
     externalCallRisk: median,
-    logicBomb: median,
-    honeypotPattern: median
+    logicBomb: median
   }))({
     targetAddress,
     maxTax,
@@ -16060,7 +16054,7 @@ var onAuditTrigger = (runtime2, log) => {
     openAiKey,
     groqKey
   }).result();
-  const { obfuscatedTax, privilegeEscalation, externalCallRisk, logicBomb, honeypotPattern } = aiResult;
+  const { obfuscatedTax, privilegeEscalation, externalCallRisk, logicBomb } = aiResult;
   let riskMatrix = 0;
   if (staticResult.unverifiedCode && !allowUnverified)
     riskMatrix |= 1;
@@ -16078,8 +16072,6 @@ var onAuditTrigger = (runtime2, log) => {
     riskMatrix |= 64;
   if (logicBomb)
     riskMatrix |= 128;
-  if (honeypotPattern)
-    riskMatrix |= 256;
   runtime2.log(`⚖️ Final Risk Code: ${riskMatrix}`);
   const tradeIdHex = bytesToHex(log.topics[1]);
   const tradeId = BigInt(tradeIdHex.startsWith("0x") ? tradeIdHex : "0x" + tradeIdHex);
