@@ -253,6 +253,8 @@ export default function AegisChat({
                                 style={{
                                     maxWidth: '85%',
                                     padding: '14px 18px',
+                                    marginTop: '10px',
+                                    marginBottom: '10px',
                                     background: msg.role === 'user'
                                         ? 'rgba(56,189,248,0.1)'
                                         : msg.isAuditUpdate
