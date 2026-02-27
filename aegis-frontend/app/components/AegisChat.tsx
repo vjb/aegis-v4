@@ -8,43 +8,36 @@ function renderMd(text: string) {
     const lines = text.split('\n');
     const out: React.ReactNode[] = [];
     let i = 0;
+    let k = 0; // Separate key counter — never reused, always increments on push
     while (i < lines.length) {
         const line = lines[i];
-        // Numbered list item
-        const numMatch = line.match(/^(\d+)\. (.*)/);
-        if (numMatch) {
+        // Numbered list
+        if (line.match(/^\d+\. /)) {
             const items: string[] = [];
-            while (i < lines.length && lines[i].match(/^\d+\. /)) {
-                items.push(lines[i].replace(/^\d+\. /, ''));
-                i++;
-            }
-            out.push(<ol key={i} style={{ paddingLeft: '1.3em', marginBottom: '0.5em' }}>{items.map((t, j) => <li key={j} style={{ marginBottom: '0.2em' }}>{inlineMd(t)}</li>)}</ol>);
+            while (i < lines.length && lines[i].match(/^\d+\. /)) { items.push(lines[i].replace(/^\d+\. /, '')); i++; }
+            out.push(<ol key={k++} style={{ paddingLeft: '1.3em', margin: '0.4em 0 0.6em' }}>{items.map((t, j) => <li key={j} style={{ marginBottom: '0.3em', lineHeight: 1.7 }}>{inlineMd(t)}</li>)}</ol>);
             continue;
         }
-        // Bullet list item
+        // Bullet list
         if (line.startsWith('- ') || line.startsWith('• ')) {
             const items: string[] = [];
-            while (i < lines.length && (lines[i].startsWith('- ') || lines[i].startsWith('• '))) {
-                items.push(lines[i].replace(/^[-•] /, ''));
-                i++;
-            }
-            out.push(<ul key={i} style={{ paddingLeft: '1.3em', marginBottom: '0.5em' }}>{items.map((t, j) => <li key={j} style={{ marginBottom: '0.2em' }}>{inlineMd(t)}</li>)}</ul>);
+            while (i < lines.length && (lines[i].startsWith('- ') || lines[i].startsWith('• '))) { items.push(lines[i].replace(/^[-•] /, '')); i++; }
+            out.push(<ul key={k++} style={{ paddingLeft: '1.3em', margin: '0.4em 0 0.6em' }}>{items.map((t, j) => <li key={j} style={{ marginBottom: '0.3em', lineHeight: 1.7 }}>{inlineMd(t)}</li>)}</ul>);
             continue;
         }
-        // Empty line = paragraph break
+        // Empty line
         if (line.trim() === '') {
-            out.push(<div key={i} style={{ height: '0.5em' }} />);
-            i++;
-            continue;
+            out.push(<div key={k++} style={{ height: '0.5em' }} />);
+            i++; continue;
         }
-        // Heading (##)
-        const headingMatch = line.match(/^#{1,3} (.+)/);
-        if (headingMatch) {
-            out.push(<p key={i} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.3em' }}>{inlineMd(headingMatch[1])}</p>);
+        // Heading
+        const heading = line.match(/^#{1,3} (.+)/);
+        if (heading) {
+            out.push(<p key={k++} style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.4em', marginTop: '0.6em' }}>{inlineMd(heading[1])}</p>);
             i++; continue;
         }
         // Normal line
-        out.push(<p key={i} style={{ marginBottom: '0.25em', lineHeight: 1.75 }}>{inlineMd(line)}</p>);
+        out.push(<p key={k++} style={{ marginBottom: '0.35em', lineHeight: 1.8 }}>{inlineMd(line)}</p>);
         i++;
     }
     return out;
