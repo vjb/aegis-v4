@@ -6,12 +6,20 @@ Starts the Chainlink CRE Oracle Docker environment and connects it to the local 
 This script:
   1. Reads the current TENDERLY_RPC_URL and AEGIS_MODULE_ADDRESS from .env
   2. Updates the CRE node's config.json with the current module address and RPC URL
-  3. Rebuilds and starts the Docker Compose environment
+  3. Starts (or rebuilds) the Docker Compose environment
   4. Tails the docker logs so you can watch the CRE node pick up AuditRequested events
 
+.PARAMETER Rebuild
+  Force a full --no-cache Docker image rebuild before starting.
+  Use this for demos to show the container being built from scratch.
+  Without this flag, docker compose uses the cached image (fast startup).
+
 .EXAMPLE
-.\scripts\start_oracle.ps1
+  .\scripts\start_oracle.ps1             # Fast start (cached image)
+  .\scripts\start_oracle.ps1 -Rebuild    # Full rebuild + start (for demos)
 #>
+
+param([switch]$Rebuild)
 
 $ErrorActionPreference = "Stop"
 
@@ -104,9 +112,16 @@ if (!(Test-Path $ComposeFile)) {
 $env:AEGIS_MODULE_ADDRESS = $ModuleAddress
 $env:TENDERLY_RPC_URL     = $RpcUrl
 
-docker compose -f $ComposeFile up --build -d 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+if ($Rebuild) {
+    Write-Host "  > Rebuilding Docker image (--no-cache)..." -ForegroundColor Yellow
+    docker compose -f $ComposeFile build --no-cache 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    Write-Host "  > Build complete. Starting container..." -ForegroundColor Green
+    docker compose -f $ComposeFile up -d 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+} else {
+    docker compose -f $ComposeFile up --build -d 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+}
 
-Write-Host "  > Docker containers started ✅" -ForegroundColor Green
+Write-Host "  > Docker container started ✅" -ForegroundColor Green
 
 # ── Tail logs ─────────────────────────────────────────────────────────────────
 Write-Host "`n=======================================================" -ForegroundColor Cyan

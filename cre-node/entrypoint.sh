@@ -2,8 +2,13 @@
 set -e
 
 # Aegis CRE Oracle — Container Entrypoint
-# Runs cre-setup on first start (compiles the Javy WASM plugin),
-# then keeps the container alive for docker exec access.
+# On first start: runs bun x cre-setup (compiles the Javy WASM plugin).
+# Subsequent starts: skips setup (flag file present).
+#
+# Secrets are automatic: docker-compose passes .env as env vars,
+# secrets.yaml maps CRE secret IDs → env var names,
+# and the CRE framework resolves them at runtime.
+# No manual 'cre secrets' command needed for local simulation.
 
 SETUP_FLAG="/app/.cre_setup_done"
 
