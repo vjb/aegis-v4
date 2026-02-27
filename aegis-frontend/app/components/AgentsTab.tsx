@@ -75,10 +75,12 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setSubmitMsg(`✅ subscribeAgent() confirmed — tx: ${data.hash?.slice(0, 12)}…`);
+            setTimeout(() => setSubmitMsg(null), 4000);
             setNewAddr(''); setNewBudget(0.05); setShowForm(false);
             await load();
         } catch (e: any) {
             setSubmitMsg(`❌ ${e.message}`);
+            setTimeout(() => setSubmitMsg(null), 6000);
         } finally {
             setSubmitting(false);
         }
