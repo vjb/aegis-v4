@@ -1,0 +1,26 @@
+# Environment variables - never commit secrets
+.env
+.env.*
+!.env.example
+
+# V3 reference material - local only
+v3-reference/
+
+# Node
+node_modules/
+dist/
+.next/
+out/
+
+# Foundry
+cache/
+out/
+broadcast/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
