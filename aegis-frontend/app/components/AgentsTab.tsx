@@ -289,7 +289,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
             )}
 
             {/* Agent cards */}
-            <div className="space-y-7">
+            <div className="space-y-10">
                 {agents.map(agent => {
                     const budgetEth = parseFloat(agent.allowanceEth);
                     const name = agentName(agent.address);
