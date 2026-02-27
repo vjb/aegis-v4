@@ -76,9 +76,9 @@ export async function POST(req: NextRequest) {
         const env = loadEnv();
         const rpc = env.TENDERLY_RPC_URL;
         const moduleAddrRaw = env.AEGIS_MODULE_ADDRESS;
-        const ownerKey = env.OWNER_PRIVATE_KEY;
+        const ownerKey = env.PRIVATE_KEY;
         if (!rpc || !moduleAddrRaw || !ownerKey) {
-            return NextResponse.json({ error: 'TENDERLY_RPC_URL, AEGIS_MODULE_ADDRESS or OWNER_PRIVATE_KEY missing' }, { status: 500 });
+            return NextResponse.json({ error: 'TENDERLY_RPC_URL, AEGIS_MODULE_ADDRESS or PRIVATE_KEY missing in .env' }, { status: 500 });
         }
 
         const moduleAddr = getAddress(moduleAddrRaw);

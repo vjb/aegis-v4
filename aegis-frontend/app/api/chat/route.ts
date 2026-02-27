@@ -53,7 +53,7 @@ async function buildSystemContext(): Promise<string> {
         const env = loadEnv();
         const rpc = env.TENDERLY_RPC_URL;
         const moduleAddrRaw = env.AEGIS_MODULE_ADDRESS;
-        const ownerKey = env.OWNER_PRIVATE_KEY;
+        const ownerKey = env.PRIVATE_KEY;
         if (!rpc || !moduleAddrRaw) return 'Chain: not connected (TENDERLY_RPC_URL or AEGIS_MODULE_ADDRESS missing in .env)';
 
         const moduleAddr = getAddress(moduleAddrRaw);
