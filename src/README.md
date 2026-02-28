@@ -1,6 +1,6 @@
-# 📦 Aegis V4 — Smart Contracts & Off-Chain Logic
+# 📦 Aegis V5 — Smart Contracts & Off-Chain Logic
 
-This directory contains the core implementation of the Aegis V4 protocol.
+This directory contains the core implementation of the Aegis V5 protocol.
 
 ## Smart Contracts (`src/*.sol`)
 
@@ -11,18 +11,25 @@ An **ERC-7579 Type-2 Executor Module** that installs onto any ERC-7579-compatibl
 - Holds **zero funds** — all capital stays in the Smart Account
 - Gated by `keystoneForwarder` — only Chainlink can grant clearance
 - Clearance is **single-use** (CEI pattern — prevents replay attacks)
-- Fully tested with 7 Forge TDD tests
+- Per-agent budget enforcement — smart contract mathematically caps spend
+- Fully tested with 18 Forge TDD tests
 
 **Functions:**
 
 | Function | Caller | Purpose |
 |---|---|---|
-| `requestAudit(address token)` | Agent / Smart Account | Emits `AuditRequested`, starts oracle pipeline |
-| `onReport(uint256 tradeId, uint256 riskScore)` | KeystoneForwarder ONLY | Grants or denies clearance |
-| `triggerSwap(address token, uint256 amount)` | Agent / Smart Account | Executes swap if cleared |
+| `depositETH()` | Owner | Deposits ETH into the module treasury |
+| `subscribeAgent(address, uint256)` | Owner | Grants agent a budget-capped trading allowance |
+| `revokeAgent(address)` | Owner | Kill switch — zeros the agent's budget |
+| `killSwitch()` | Owner | Emergency — zeros ALL agent budgets |
+| `setFirewallConfig(string)` | Owner | Sets AI firewall policy applied to every audit |
+| `requestAudit(address token)` | Agent / Owner | Emits `AuditRequested`, starts oracle pipeline |
+| `onReport(bytes, bytes)` | KeystoneForwarder | CRE callback — grants or denies clearance |
+| `onReportDirect(uint256, uint256)` | Forwarder / Owner | Demo relay — simplified oracle callback |
+| `triggerSwap(address, uint256, uint256)` | Agent / Owner | JIT execution — requires clearance + budget |
+| `withdrawETH(uint256)` | Owner | Withdraws ETH from treasury |
+| `withdrawERC20(address, uint256)` | Owner | Withdraws ERC-20 tokens from treasury |
 | `onInstall(bytes)` / `onUninstall(bytes)` | Smart Account | ERC-7579 lifecycle hooks |
-
-**Deployed:** `0xE5D4716ba20DefCc50C863952474A0edc3574A2B` (Base Sepolia)
 
 ---
 
@@ -50,8 +57,9 @@ See [cre-node/README.md](../cre-node/README.md) for oracle setup.
 The **BYOA (Bring Your Own Agent)** trading bot. Implements the capital separation guarantee:
 
 ```
-Agent Wallet  →  holds GAS only
+Agent Wallet  →  holds GAS only (ERC-7715 session key)
 Smart Account →  holds trading capital
+Session Key   →  scoped to requestAudit + triggerSwap ONLY
 ```
 
 **Exported functions:**
@@ -66,17 +74,22 @@ Smart Account →  holds trading capital
 ```bash
 # Forge (Solidity)
 forge test --match-contract AegisModuleTest -vv
-# Expected: 7 passed, 0 failed
+# Expected: 18 passed, 0 failed
 
 # Jest (TypeScript)
 pnpm exec jest
-# Expected: 12 passed, 0 failed
+# Expected: 83 passed, 1 skipped (7 suites)
 ```
 
 ## Test Coverage
 
 | Test File | Tests | What's Covered |
 |---|---|---|
-| `test/AegisModule.t.sol` | 7 | requestAudit event, onReport clearance/denial, keystoneForwarder guard, triggerSwap CEI, tradeId increment, executeFromExecutor |
-| `test/oracle.spec.ts` | 6 | ABI encoding (uint256,uint256), riskScore bits, oracle config shape |
-| `test/bot.spec.ts` | 6 | Config validation, calldata encoding, BYOA capital separation, risk bit decoding, polling timeout |
+| `test/AegisModule.t.sol` | 18 | requestAudit, onReport clearance/denial, keystoneForwarder guard, triggerSwap CEI, budget enforcement, tradeId increment, subscribeAgent, revokeAgent, killSwitch |
+| `test/oracle.spec.ts` | 12 | ABI encoding, riskScore bits, oracle config, AI JSON parsing |
+| `test/bot.spec.ts` | 6 | Config validation, calldata encoding, BYOA capital separation, risk bit decoding |
+| `test/bot_v5.spec.ts` | 9 | V5 call builders, module targeting, zero-value, selectors, triggerSwap 3-param |
+| `test/safe_setup.spec.ts` | 7 | Safe config, module config, EntryPoint constant, integration gate |
+| `test/session_key.spec.ts` | 14 | SmartSessionValidator, selectors, buildAgentSession, SmartSessionMode |
+| `test/live_e2e.spec.ts` | 5 | Live Base Sepolia: requestAudit → onReportDirect → triggerSwap → revert |
+| `test/frontend.spec.ts` | 26 | Wallet, session key rendering, oracle feed SSE parsing |

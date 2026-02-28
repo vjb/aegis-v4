@@ -1,7 +1,17 @@
-# 🧪 Aegis — Test Suite
+# 🧪 Aegis V5 — Test Suite
 
-TDD-first test suite covering V4 (protocol correctness) and V5 (ERC-4337 AA migration).
-All TypeScript tests were written **before** their implementation files.
+TDD-first test suite covering the full Aegis V5 stack: ERC-7579 module, CRE oracle, ERC-4337 AA, ERC-7715 session keys, and frontend components.
+
+## Current Status
+
+```
+forge test --match-contract AegisModuleTest
+  ✅ 18 passed, 0 failed
+
+pnpm exec jest
+  ✅ 7 suites — 83 passed, 1 skipped
+  ⏱  ~80s
+```
 
 ## Running Tests
 
@@ -16,76 +26,71 @@ npx jest test/bot_v5.spec.ts --no-coverage
 forge test --match-contract AegisModuleTest -vv
 ```
 
-## Current Status
+---
 
-```
-pnpm exec jest
-  ✅ 5 suites — 42 passed, 1 skipped (integration gate)
-  ⏱  ~24s
+## Solidity Suite (Forge)
 
-forge test --match-contract AegisModuleTest
-  ✅ 7 passed, 0 failed
-```
+**`test/AegisModule.t.sol`** — 18 tests against `AegisModule.sol`:
+
+| # | Test | Assertion |
+|---|---|---|
+| 1 | `test_requestAudit_emitsEvent` | `AuditRequested` emitted with correct tradeId |
+| 2 | `test_requestAudit_blocksUnauthorizedAgent` | Non-subscribed agent → `NotAuthorized` |
+| 3 | `test_onReport_clearance` | riskScore=0 → `isApproved[token]=true` |
+| 4 | `test_onReport_denial` | riskScore>0 → `ClearanceDenied` emitted |
+| 5 | `test_onReport_keystoneGuard` | Non-forwarder caller → `NotKeystoneForwarder` |
+| 6 | `test_triggerSwap_requiresClearance` | Swap without clearance → `TokenNotCleared` |
+| 7 | `test_triggerSwap_consumesClearance` | Clearance consumed after swap (anti-replay CEI) |
+| 8 | `test_triggerSwap_mockEmitsEvent` | `SwapExecuted` emitted on success |
+| 9 | `test_triggerSwap_deductsBudget` | Agent budget decremented after swap |
+| 10 | `test_triggerSwap_insufficientBudget` | Swap exceeding budget → `InsufficientBudget` |
+| 11 | `test_triggerSwap_onlyOwnerOrAgent` | Non-agent caller → `NotAuthorized` |
+| 12 | `test_subscribeAgent` | `AgentSubscribed` emitted, allowance set |
+| 13 | `test_subscribeAgent_onlyOwner` | Non-owner → `NotOwner` |
+| 14 | `test_revokeAgent_blocksAudit` | Revoked agent → `NotAuthorized` on requestAudit |
+| 15 | `test_tradeId_increment` | tradeIds are sequential (0, 1, 2...) |
+| 16 | `test_killSwitch` | Emergency: all agent budgets zeroed |
+| 17 | `test_depositETH` | `TreasuryDeposit` emitted, balance increases |
+| 18 | `test_withdrawETH` | `TreasuryWithdrawal` emitted, balance decreases |
 
 ---
 
 ## TypeScript Suites (Jest)
 
-### V4 — Protocol Correctness
+### Protocol Correctness
 
 | File | Tests | What It Covers |
 |---|---|---|
-| `oracle.spec.ts` | 6 | ABI encoding, riskScore bit decoding, oracle config shape |
-| `bot.spec.ts` | 6 | Agent calldata encoding, V4 capital model, polling timeout |
+| `oracle.spec.ts` | 12 | ABI encoding, riskScore bit decoding, oracle config shape, AI JSON parsing |
+| `bot.spec.ts` | 6 | Agent calldata encoding, capital model, polling timeout |
 
-### V5 — ERC-4337 AA Migration (feat/v5-aa-stack)
+### ERC-4337 AA Stack
 
-| File | Tests | What It Covers | Phase |
-|---|---|---|---|
-| `safe_setup.spec.ts` | 6 ✅ + 1 ⏭️ | `buildSafeConfig`, `buildAegisModuleConfig`, `ENTRYPOINT_V07` constant; integration test skipped until Anvil | 2 |
-| `session_key.spec.ts` | 14 | SmartSessionValidator address, `requestAudit`/`triggerSwap` selectors, `buildAgentSession` shape, `SmartSessionMode` enum | 3 |
-| `bot_v5.spec.ts` | 9 | V5 call builders target module (not Safe), zero-value, correct selectors, 3-param triggerSwap (V4 bug fixed), calldata length | 4 |
-
-**The 1 skipped test** (`safe_setup.spec.ts:deploySafeWithAegisModule`) is an integration gate — it runs when `TENDERLY_RPC_URL`, `PRIVATE_KEY`, and `AEGIS_MODULE_ADDRESS` are all set. It deploys a real Safe and asserts `isModuleInstalled`.
-
----
-
-## Solidity Suite (Forge)
-
-**`test/AegisModule.t.sol`** — 7 tests against `AegisModule.sol`:
-
-| # | Test | Assertion |
+| File | Tests | What It Covers |
 |---|---|---|
-| 1 | `test_requestAudit_emitsEvent` | `AuditRequested` emitted with correct tradeId |
-| 2 | `test_onReport_clearance` | riskScore=0 → `isApproved[token]=true` |
-| 3 | `test_onReport_denial` | riskScore>0 → `ClearanceDenied` emitted |
-| 4 | `test_onReport_keystoneGuard` | non-forwarder caller → `NotKeystoneForwarder` |
-| 5 | `test_triggerSwap_requiresClearance` | swap without clearance → `TokenNotCleared` |
-| 6 | `test_triggerSwap_consumesClearance` | clearance consumed after swap (anti-replay CEI) |
-| 7 | `test_tradeId_increment` | tradeIds are sequential (1, 2, 3...) |
+| `safe_setup.spec.ts` | 7 | `buildSafeConfig`, `buildAegisModuleConfig`, `ENTRYPOINT_V07` constant; 1 integration test gated by env vars |
+| `session_key.spec.ts` | 14 | SmartSessionValidator address, `requestAudit`/`triggerSwap` selectors, `buildAgentSession` shape |
+| `bot_v5.spec.ts` | 9 | V5 call builders target module (not Safe), zero-value, correct selectors, 3-param triggerSwap |
+
+### Live Integration (Base Sepolia)
+
+| File | Tests | What It Covers |
+|---|---|---|
+| `live_e2e.spec.ts` | 5 | `requestAudit` → `onReportDirect` → `triggerSwap` success + `TokenNotCleared` revert |
+
+### Frontend TDD
+
+| File | Tests | What It Covers |
+|---|---|---|
+| `frontend.spec.ts` | 26 | Wallet rendering, session key display, oracle feed SSE event parsing |
 
 ---
 
-## V5 Test Architecture Notes
+## Test Architecture Notes
 
 **Jest module resolution:** viem, permissionless, and @rhinestone/module-sdk are ESM packages.
 The `jest.config.json` `moduleNameMapper` redirects them to their `_cjs/index.js` builds.
-Known workaround: `encodeFunctionData` from viem CJS has incorrect type overloads in ts4.x
-with `as const` ABIs — fixed in `v5_bot_config.ts` with a typed `EncodeFn` cast wrapper.
-See `docs/LESSONS_LEARNED.md` for detail.
 
-**Integration test gate:** `deploySafeWithAegisModule` is skipped unless all three env vars are
-present. This prevents false CI failures while allowing live integration on dev machines.
+**Integration test gate:** `deploySafeWithAegisModule` is skipped unless `BASE_SEPOLIA_RPC_URL`, `PRIVATE_KEY`, and `AEGIS_MODULE_ADDRESS` are all set.
 
----
-
-## Phase Roadmap
-
-| Phase | Status | Test File |
-|---|---|---|
-| P2 — Safe + Module Install | ✅ unit / ⏭️ integration | `safe_setup.spec.ts` |
-| P3 — Session Key | ✅ 14/14 | `session_key.spec.ts` |
-| P4 — Bot UserOps | ✅ 9/9 | `bot_v5.spec.ts` |
-| P5a — E2E Mock (Anvil) | 🔲 run `scripts/start_v5_local.ps1` | — |
-| P5b — E2E + Swap (Tenderly) | 🔲 needs new VNet | — |
-| P6 — Live CRE Integration | 🔲 real `onReport()` via Chainlink DON | — |
+**ES2020 target:** `jest.config.json` uses `tsconfig` with `target: ES2020` to support BigInt literals in `live_e2e.spec.ts`.
