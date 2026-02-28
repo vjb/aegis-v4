@@ -212,10 +212,12 @@ if (logicBomb)                         riskMatrix |= 128; // Bit 7
 | Act | Title | What Happens |
 |---|---|---|
 | 1 — The Bank | Zero-Custody Treasury | `cast balance` shows AegisModule holds 0 ETH — capital is in the Safe |
-| 2 — The Keys | ERC-7715 Session Provisioning | Session key scoped to 2 selectors displayed (`0xe34eac65`, `0x684bceb0`) |
+| 2 — The Keys | Subscribe AI Agents | `subscribeAgent(NOVA, 0.05 ETH)` + `subscribeAgent(CIPHER, 0.008 ETH)` on-chain |
 | 3 — The Intents | Agent NOVA submits audits | `requestAudit` for MockBRETT + MockHoneypot on Base Sepolia |
 | 4 — The AI Firewall | **LIVE CRE Execution** | `docker exec cre workflow simulate` — GoPlus → BaseScan → GPT-4o + Llama-3 |
 | 5 — The Execution | The Final Verdict | MockBRETT swap ✅ SUCCESS, MockHoneypot swap ❌ `TokenNotCleared()` REVERT |
+| 6 — Budget Check | Verify Deduction | `agentAllowances()` proves budget was mathematically deducted |
+| 7 — Kill Switch | Revoke Agent REX | `revokeAgent(REX)` → budget zeroed, access denied, sovereignty restored |
 
 ### `demo_v5_cre.ps1` — CRE Deep Dive (~3 min)
 Raw Chainlink CRE WASM execution for CRE & AI judges. No frontend, no abstraction — just the oracle analyzing a known honeypot with full color-coded log streaming.
