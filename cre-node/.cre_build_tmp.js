@@ -15771,7 +15771,7 @@ var performStaticAnalysis = (nodeRuntime, input) => {
   }
   const targetTokenHex = bytesToHex(log.topics[3]).replace("0x", "");
   const targetAddress = "0x" + targetTokenHex.slice(-40).toLowerCase();
-  nodeRuntime.log(`\uD83D\uDEE1️ AEGIS MODULE V4 | Auditing: ${targetAddress}`);
+  nodeRuntime.log(`\uD83D\uDEE1️ AEGIS MODULE V5 | Auditing: ${targetAddress}`);
   const mockData = MOCK_REGISTRY[targetAddress];
   if (mockData) {
     if (mockData.goplus.is_open_source === "0")
@@ -16027,7 +16027,7 @@ ${sourceCode}`;
   return { obfuscatedTax, privilegeEscalation, externalCallRisk, logicBomb };
 };
 var onAuditTrigger = (runtime2, log) => {
-  runtime2.log("\uD83D\uDEE1️ AegisModule V4 | AuditRequested intercepted");
+  runtime2.log("\uD83D\uDEE1️ AegisModule V5 | AuditRequested intercepted");
   let firewallConfig = '{"maxTax":5,"blockProxies":true,"strictLogic":true,"blockHoneypots":true}';
   try {
     if (log.data && log.data.length > 0) {
