@@ -201,13 +201,13 @@ if (logicBomb)                         riskMatrix |= 128; // Bit 7
 .\scripts\demo_v5_cre.ps1 -Interactive
 ```
 
-### `demo_v5_setup.ps1` — Infrastructure Boot (~2 min)
+### [`demo_v5_setup.ps1`](scripts/demo_v5_setup.ps1) — Infrastructure Boot (~2 min) · [sample output](docs/sample_output/demo_v5_setup_run.txt)
 - Verifies Base Sepolia connectivity (Chain ID 84532)
 - Checks deployer wallet balance
 - Rebuilds Chainlink CRE Docker container
 - Compiles TypeScript oracle to WASM via Javy
 
-### `demo_v5_master.ps1` — The God Mode Demo (~5 min)
+### [`demo_v5_master.ps1`](scripts/demo_v5_master.ps1) — The God Mode Demo (~5 min) · [sample output](docs/sample_output/demo_v5_master_run.txt)
 
 | Act | Title | What Happens |
 |---|---|---|
@@ -219,7 +219,7 @@ if (logicBomb)                         riskMatrix |= 128; // Bit 7
 | 6 — Budget Check | Verify Deduction | `agentAllowances()` proves budget was mathematically deducted |
 | 7 — Kill Switch | Revoke Agent REX | `revokeAgent(REX)` → budget zeroed, access denied, sovereignty restored |
 
-### `demo_v5_cre.ps1` — CRE Deep Dive (~3 min)
+### [`demo_v5_cre.ps1`](scripts/demo_v5_cre.ps1) — CRE Deep Dive (~3 min) · [sample output](docs/sample_output/demo_v5_cre_run.txt)
 Raw Chainlink CRE WASM execution for CRE & AI judges. No frontend, no abstraction — just the oracle analyzing a known honeypot with full color-coded log streaming.
 
 ### Sample Output (from actual runs on Base Sepolia)
@@ -379,7 +379,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 
 ## 🏆 Hackathon Track Requirements
 
-### Track: Risk & Compliance ($16K)
+### Track: Risk & Compliance
 
 | Requirement | Implementation | Link |
 |---|---|---|
@@ -390,7 +390,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | Protocol Safeguard Triggers | `TokenNotCleared()` revert, `ClearanceDenied` event, `killSwitch()` | [`test/AegisModule.t.sol`](test/AegisModule.t.sol) |
 | Video Demonstration | 3–5 min demo showcasing end-to-end workflow | [Demo Video](#) |
 
-### Track: CRE & AI ($17K)
+### Track: CRE & AI
 
 | Requirement | Implementation |
 |---|---|
@@ -401,7 +401,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | CRE Workflow Config | [`workflow.yaml`](cre-node/workflow.yaml) · [`config.json`](cre-node/config.json) |
 | AI-in-the-Loop Execution | CRE callback directly controls whether agent can execute swap |
 
-### Track: Privacy ($16K)
+### Track: Privacy
 
 | Requirement | Implementation |
 |---|---|
@@ -410,7 +410,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | Protection of Protocol IP | Proprietary threat-detection prompts encrypted in transit, invisible to node operators |
 | Full Documentation | [`docs/CONFIDENTIAL_HTTP.md`](docs/CONFIDENTIAL_HTTP.md) |
 
-### Track: Autonomous Agents ($5K)
+### Track: Autonomous Agents
 
 | Requirement | Implementation |
 |---|---|
@@ -419,7 +419,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | Agent-driven execution | AI agent submits UserOps via Pimlico bundler — no human in the loop |
 | BYOA (Bring Your Own Agent) | Any external agent can be subscribed via `subscribeAgent(address, uint256)` |
 
-### Track: DeFi & Tokenization ($20K)
+### Track: DeFi & Tokenization
 
 | Requirement | Implementation |
 |---|---|

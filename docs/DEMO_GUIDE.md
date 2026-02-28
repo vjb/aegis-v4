@@ -50,10 +50,10 @@ docker compose up --build -d
 
 ---
 
-## Demo 1 — Infrastructure Boot (`demo_v5_setup.ps1`)
+## Demo 1 — Infrastructure Boot ([`demo_v5_setup.ps1`](../scripts/demo_v5_setup.ps1)) · [sample output](sample_output/demo_v5_setup_run.txt)
 
 **Time:** ~2 minutes
-**Prize tracks:** CRE & AI · Risk & Compliance
+**Tracks:** CRE & AI · Risk & Compliance
 
 ### What It Proves
 
@@ -67,10 +67,10 @@ The decentralized bedrock is live. Base Sepolia is reachable, the dev wallet is 
 
 ---
 
-## Demo 2 — The God Mode Demo (`demo_v5_master.ps1`)
+## Demo 2 — The God Mode Demo ([`demo_v5_master.ps1`](../scripts/demo_v5_master.ps1)) · [sample output](sample_output/demo_v5_master_run.txt)
 
 **Time:** ~5 minutes
-**Prize tracks:** CRE & AI ($17K) · Privacy ($16K) · DeFi & Tokenization ($20K) · Autonomous Agents ($5K)
+**Tracks:** CRE & AI · Privacy · DeFi & Tokenization · Autonomous Agents
 
 ### What It Proves
 
@@ -116,10 +116,10 @@ Phase 3 — AI Consensus (ConfidentialHTTPClient)
 
 ---
 
-## Demo 3 — CRE Deep Dive (`demo_v5_cre.ps1`)
+## Demo 3 — CRE Deep Dive ([`demo_v5_cre.ps1`](../scripts/demo_v5_cre.ps1)) · [sample output](sample_output/demo_v5_cre_run.txt)
 
 **Time:** ~3 minutes
-**Prize tracks:** CRE & AI ($17K) · Privacy ($16K)
+**Tracks:** CRE & AI · Privacy
 
 ### What It Proves
 
