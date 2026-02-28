@@ -33,7 +33,7 @@ graph LR
         A["agent: requestAudit(token)"]
         B["CRE: onReport(id, score)"]
         C["owner: subscribeAgent(addr, budget)"]
-        D["owner: killSwitch()"]
+        D["owner: revokeAgent(addr)"]
     end
 
     subgraph AegisModule.sol
@@ -54,7 +54,7 @@ graph LR
     B --> PP --> IA --> F
     IA -->|"approved"| G
     C --> AA
-    D -->|"zero all"| AA
+    D -->|"zeroes budget"| AA
 ```
 
 ---
@@ -151,14 +151,14 @@ sequenceDiagram
 flowchart TD
     subgraph Agents
         NOVA["NOVA\n0.05 ETH budget"]
-        CIPHER["CIPHER\n0.01 ETH budget"]
+        CIPHER["CIPHER\n0.008 ETH budget"]
         REX["REX\n0.01 ETH budget"]
     end
 
     subgraph Oracle["Chainlink CRE runs for each token independently"]
         O1["BRETT\nGoPlus ✅ · AI ✅ → Risk Code 0"]
         O2["TaxToken\nAI reads hidden sell restriction → Risk Code 18"]
-        O3["HoneypotCoin\nAI reads honeypot pattern → Risk Code 4"]
+        O3["HoneypotCoin\nAI reads honeypot pattern → Risk Code 36"]
     end
 
     subgraph Results
@@ -261,7 +261,7 @@ sequenceDiagram
     AM->>Safe: triggerSwap() — simulated
     Note right of AM: Budget remaining: 0.04 ETH
 
-    Owner->>AM: killSwitch()
+    Owner->>AM: revokeAgent(agentAddr)
     AM->>AM: agentAllowances[agentAddr] = 0
     AM-->>Owner: emit AgentRevoked
 ```
@@ -309,7 +309,7 @@ graph TB
 
         subgraph Left["Left Panel 60%"]
             Tabs["Tabs: Agents · Firewall · Audit Log · Marketplace"]
-            AgTab["AgentsTab\nsubscribe · revoke · budget bars"]
+            AgTab["AgentsTab\nsubscribe · revoke · filter · dismiss · ERC-7715 scope"]
             FwTab["FirewallTab\n8-bit risk toggles"]
             LogTab["AuditLogTab\nreal on-chain events"]
             MktTab["MarketplaceTab\npreset agent templates"]
@@ -324,7 +324,7 @@ graph TB
     subgraph API["API Routes"]
         Audit["/api/audit → CRE SSE stream"]
         Chat["/api/chat → LLM assistant"]
-        Radar["/api/radar → on-chain events"]
+        Radar["/api/events → on-chain events"]
     end
 
     AgTab & FwTab -->|"writeContract"| AM["AegisModule.sol"]
