@@ -39,12 +39,7 @@ const AUDIT_REQUESTED_ABI = {
 } as const;
 
 function loadEnv() {
-    // process.env is populated by Next.js from .env.local (preferred)
-    const fromProcess: Record<string, string> = {};
-    const keys = ['OPENAI_API_KEY', 'BASE_SEPOLIA_RPC_URL', 'TENDERLY_RPC_URL', 'AEGIS_MODULE_ADDRESS', 'PRIVATE_KEY', 'DEV_WALLET_ADDRESS'];
-    keys.forEach(k => { if (process.env[k]) fromProcess[k] = process.env[k]!; });
-
-    // Fall back to manual .env file read (handles keys not yet in .env.local)
+    // Read .env file from project root (one level up from aegis-frontend)
     const envPath = path.resolve(process.cwd(), '../.env');
     const fromFile: Record<string, string> = {};
     if (fs.existsSync(envPath)) {
@@ -53,7 +48,14 @@ function loadEnv() {
             if (k && rest.length) fromFile[k.trim()] = rest.join('=').trim();
         });
     }
-    return { ...fromFile, ...fromProcess }; // process.env wins
+
+    // process.env provides fallback for keys not in the .env file (e.g. OPENAI_API_KEY from .env.local)
+    const fromProcess: Record<string, string> = {};
+    const keys = ['OPENAI_API_KEY', 'BASE_SEPOLIA_RPC_URL', 'TENDERLY_RPC_URL', 'AEGIS_MODULE_ADDRESS', 'PRIVATE_KEY', 'DEV_WALLET_ADDRESS', 'AGENT_WALLET_ADDRESS'];
+    keys.forEach(k => { if (process.env[k]) fromProcess[k] = process.env[k]!; });
+
+    // .env file wins — process.env may have stale values cached by Next.js
+    return { ...fromProcess, ...fromFile };
 }
 
 async function buildSystemContext(): Promise<string> {
@@ -146,7 +148,6 @@ async function buildSystemContext(): Promise<string> {
         // (events may be outside the block range on Base Sepolia ~28h)
         const knownAddrs = [
             ...Object.keys(KNOWN_NAMES),
-            ownerKey ? (await import('viem/accounts')).privateKeyToAccount(ownerKey as `0x${string}`).address.toLowerCase() : '',
             env.AGENT_WALLET_ADDRESS?.toLowerCase() || '',
             env.DEV_WALLET_ADDRESS?.toLowerCase() || '',
         ].filter(Boolean);
@@ -154,17 +155,18 @@ async function buildSystemContext(): Promise<string> {
             if (!seen.has(ka)) { seen.add(ka); agentAddresses.push(ka); }
         }
 
+
         const agentLines: string[] = [];
         for (const addr of agentAddresses) {
             const allowance = await publicClient.readContract({
-                address: moduleAddr, abi: MODULE_ABI, functionName: 'agentAllowances', args: [addr as `0x${string}`]
-            }).catch(() => BigInt(0));
+                address: moduleAddr, abi: MODULE_ABI, functionName: 'agentAllowances', args: [getAddress(addr)]
+            }).catch(() => BigInt(0)) as bigint;
 
-            // Skip addresses with no allowance that weren't in event logs
+            // Skip addresses with zero allowance that weren't found via events
             const fromEvent = agentLogs.some(l => ('0x' + (l.topics[1] as string).slice(-40)).toLowerCase() === addr);
-            if (allowance === BigInt(0) && !fromEvent) continue;
+            if (allowance <= BigInt(0) && !fromEvent) continue;
 
-            const gasBalance = await publicClient.getBalance({ address: addr as `0x${string}` }).catch(() => BigInt(0));
+            const gasBalance = await publicClient.getBalance({ address: getAddress(addr) }).catch(() => BigInt(0));
 
             const name = KNOWN_NAMES[addr] || addr.slice(0, 10) + '…';
             const remaining = (Number(allowance) / 1e18).toFixed(4);
