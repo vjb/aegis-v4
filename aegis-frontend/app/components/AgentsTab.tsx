@@ -1,8 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bot, Plus, Trash2, TrendingUp, AlertTriangle, RefreshCw, Loader2, X, ChevronDown } from 'lucide-react';
+import { Bot, Plus, Trash2, TrendingUp, AlertTriangle, RefreshCw, Loader2, X, ChevronDown, Shield, Key, Lock, Unlock } from 'lucide-react';
 
+// ERC-7715 Session Key constants (from v5_session_config.ts)
+const SESSION_KEY_SCOPE = {
+    selectors: [
+        { name: 'requestAudit', sig: 'requestAudit(address)', selector: '0xe34eac65', description: 'Request a CRE oracle audit for a token' },
+        { name: 'triggerSwap', sig: 'triggerSwap(address,uint256,uint256)', selector: '0x684bceb0', description: 'Execute a swap after CRE clearance' },
+    ],
+    blocked: [
+        { name: 'withdrawETH', description: 'Cannot withdraw treasury funds' },
+        { name: 'revokeAgent', description: 'Cannot revoke other agents' },
+        { name: 'setFirewallConfig', description: 'Cannot modify firewall rules' },
+        { name: 'transfer', description: 'Cannot transfer arbitrary tokens' },
+    ],
+    validatorAddress: '0x00000000008bDABA73cD9815d79069c247Eb4bDA',
+    expiryHours: 24,
+};
 type Agent = {
     address: string;
     allowance: string;
@@ -240,7 +255,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
 
             {/* Subscribe form */}
             {showForm && (
-                <div className="card slide-in space-y-5">
+                <div className="card slide-in space-y-5" style={{ marginBottom: 24 }}>
                     <div className="flex items-center justify-between">
                         <p className="mono text-xs font-semibold" style={{ color: 'var(--cyan)' }}>New Agent — subscribeAgent(addr, budget)</p>
                     </div>
@@ -271,6 +286,46 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                             onChange={e => setNewBudget(parseFloat(e.target.value))} style={{ width: '100%' }} />
                         <div className="flex justify-between mono text-xs" style={{ color: 'var(--text-subtle)' }}>
                             <span>0.001 ETH</span><span>1 ETH</span>
+                        </div>
+                    </div>
+
+                    {/* ERC-7715 Session Key Scope */}
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Key className="w-3.5 h-3.5" style={{ color: 'var(--amber)' }} />
+                            <p className="mono text-xs font-semibold" style={{ color: 'var(--amber)' }}>ERC-7715 Session Key Scope</p>
+                        </div>
+
+                        <div style={{ background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.1)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+                            <p className="mono text-xs mb-2" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10 }}>Permitted Functions</p>
+                            <div className="space-y-2">
+                                {SESSION_KEY_SCOPE.selectors.map(s => (
+                                    <div key={s.name} className="flex items-center gap-2">
+                                        <Unlock className="w-3 h-3" style={{ color: 'var(--green)' }} />
+                                        <span className="mono text-xs" style={{ color: 'var(--green)' }}>{s.name}()</span>
+                                        <span className="mono text-xs" style={{ color: 'var(--text-subtle)' }}>→ {s.selector}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'rgba(248,113,113,0.04)', border: '1px solid rgba(248,113,113,0.1)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+                            <p className="mono text-xs mb-2" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10 }}>Blocked Functions</p>
+                            <div className="space-y-1.5">
+                                {SESSION_KEY_SCOPE.blocked.map(b => (
+                                    <div key={b.name} className="flex items-center gap-2">
+                                        <Lock className="w-3 h-3" style={{ color: 'var(--red)' }} />
+                                        <span className="mono text-xs" style={{ color: 'var(--red)', opacity: 0.8 }}>{b.name}()</span>
+                                        <span className="mono text-xs" style={{ color: 'var(--text-subtle)', fontSize: 10 }}>— {b.description}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 mono text-xs" style={{ color: 'var(--text-subtle)' }}>
+                            <span><Shield className="w-3 h-3 inline mr-1" style={{ color: 'var(--amber)' }} />Target: AegisModule</span>
+                            <span>Expiry: {SESSION_KEY_SCOPE.expiryHours}h</span>
+                            <span>Budget: {newBudget.toFixed(3)} ETH</span>
                         </div>
                     </div>
                     <div className="flex gap-3">
@@ -334,7 +389,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                             </div>
 
                             {/* Budget */}
-                            <div className="mb-5">
+                            <div className="mb-3">
                                 <div className="flex justify-between mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
                                     <span>Remaining allowance</span>
                                     <span style={{ color: budgetEth < 0.001 ? 'var(--red)' : 'var(--cyan)', fontWeight: 600 }}>
@@ -347,6 +402,32 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                                         <AlertTriangle className="w-3.5 h-3.5" /> Budget exhausted — re-subscribe to top up
                                     </p>
                                 )}
+                            </div>
+
+                            {/* ERC-7715 Session Key Details */}
+                            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginBottom: 8 }}>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                    <Key className="w-3 h-3" style={{ color: agent.active ? 'var(--amber)' : 'var(--text-subtle)' }} />
+                                    <span className="mono" style={{ fontSize: 10, color: agent.active ? 'var(--amber)' : 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                        Session Key {agent.active ? 'Active' : 'Revoked'}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {SESSION_KEY_SCOPE.selectors.map(s => (
+                                        <span key={s.name} className="mono" style={{
+                                            fontSize: 10,
+                                            padding: '2px 8px',
+                                            borderRadius: 4,
+                                            background: agent.active ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                                            border: `1px solid ${agent.active ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.15)'}`,
+                                            color: agent.active ? 'var(--green)' : 'var(--red)',
+                                        }}>{s.name}() → {s.selector.slice(0, 6)}</span>
+                                    ))}
+                                    <span className="mono" style={{
+                                        fontSize: 10, padding: '2px 8px', borderRadius: 4,
+                                        background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.12)', color: 'var(--text-subtle)',
+                                    }}>Target: AegisModule</span>
+                                </div>
                             </div>
 
                             {/* Simulate Trade button — always present, disabled when revoked */}
