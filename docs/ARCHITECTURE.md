@@ -1,6 +1,6 @@
-# Aegis Protocol V4 — System Architecture
+# Aegis Protocol V5 — System Architecture
 
-> 12 Mermaid diagrams covering all layers of the Aegis V4 stack.
+> 12 Mermaid diagrams covering all layers of the Aegis V5 stack.
 
 ---
 
@@ -268,15 +268,15 @@ sequenceDiagram
 
 ---
 
-## 10. Tenderly VNet Development Loop
+## 10. Base Sepolia Deployment Flow
 
 ```mermaid
 flowchart LR
-    PS["new_tenderly_testnet.ps1"]
+    Deploy["forge script DeployMocks.s.sol"]
 
-    subgraph Tenderly
-        VNet["Virtual Testnet\nBase fork · cheatcodes"]
-        Explorer["Contract Explorer\nverified source · decoded calls"]
+    subgraph BaseSepolia["Base Sepolia (84532)"]
+        Contracts["AegisModule + MockBRETT\n+ MockHoneypot"]
+        Explorer["BaseScan\nverified source"]
     end
 
     subgraph Oracle
@@ -284,19 +284,18 @@ flowchart LR
     end
 
     subgraph DemoScripts
-        D1["demo_1_cre_oracle.ps1"]
-        D2["demo_2_multi_agent.ps1"]
-        D3["demo_3_erc7579_architecture.ps1"]
+        D1["demo_v5_setup.ps1"]
+        D2["demo_v5_master.ps1"]
+        D3["demo_v5_cre.ps1"]
     end
 
-    PS -->|"1. create VNet"| VNet
-    PS -->|"2. forge deploy"| VNet
-    PS -->|"3. forge verify"| Explorer
-    PS -->|"4. update .env + config.json"| Docker
-    DemoScripts -->|"cast send requestAudit()"| VNet
-    VNet -->|"AuditRequested log"| Docker
-    Docker -->|"--evm-tx-hash"| VNet
-    Docker -->|"onReportDirect(id, riskCode)"| VNet
+    Deploy -->|"1. broadcast"| Contracts
+    Deploy -->|"2. verify"| Explorer
+    D1 -->|"docker compose up"| Docker
+    DemoScripts -->|"cast send requestAudit()"| Contracts
+    Contracts -->|"AuditRequested log"| Docker
+    Docker -->|"--evm-tx-hash"| Contracts
+    Docker -->|"onReportDirect(id, riskCode)"| Contracts
 ```
 
 ---
@@ -387,6 +386,6 @@ sequenceDiagram
 | 7 | Security Zone Architecture | `graph TB` |
 | 8 | 8-Bit Risk Matrix | `graph LR` |
 | 9 | Agent Subscription Lifecycle | `sequenceDiagram` |
-| 10 | Tenderly Development Loop | `flowchart LR` |
+| 10 | Base Sepolia Deployment Flow | `flowchart LR` |
 | 11 | Frontend Architecture | `graph TB` |
 | 12 | End-to-End Happy Path | `sequenceDiagram` |

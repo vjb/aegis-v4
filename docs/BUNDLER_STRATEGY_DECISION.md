@@ -1,10 +1,12 @@
-# Bundler Strategy Decision: Direct `handleOps` vs. Off-Chain Bundler
+# Bundler Strategy Decision: Pimlico Cloud vs. Direct `handleOps`
 
 ## Context
 
 Aegis V5 migrates the Smart Treasury from raw `sendTransaction` calls to ERC-4337 Account Abstraction. This requires a **bundler** — a service that receives `UserOperation` structs, validates them, and submits them to the `EntryPoint.handleOps()` contract.
 
-During development on a Tenderly Virtual TestNet, we discovered a fundamental incompatibility between the Pimlico **Alto** bundler and Tenderly's RPC implementation. This document records the decision to bypass the off-chain bundler and submit `handleOps()` directly.
+During development, we evaluated three bundler strategies. This document records the decision-making process and the final outcome.
+
+> **V5 Outcome:** Option A (Pimlico Cloud Bundler on Base Sepolia) was selected for the final hackathon demo. Direct `handleOps` (Option C) was used as a stepping stone during Tenderly development.
 
 ---
 
@@ -18,14 +20,14 @@ See [ALTO_BUNDLER_DEBUG_LOG.md](./ALTO_BUNDLER_DEBUG_LOG.md) for the full debugg
 
 ## Options Evaluated
 
-### Option A: Deploy on Base Sepolia with Pimlico's Hosted Bundler
+### Option A: Deploy on Base Sepolia with Pimlico's Hosted Bundler ✅ (Selected for V5)
 
 | Aspect | Detail |
 |---|---|
 | **How it works** | Use Pimlico's public bundler API (`api.pimlico.io`) targeting the live Base Sepolia testnet |
-| **Pros** | Full ERC-4337 compliance (on-chain + off-chain). All Safe infrastructure pre-deployed. Production-grade gas estimation. |
-| **Cons** | Requires a Pimlico API key. Requires Base Sepolia ETH (faucet). Loses Tenderly's state forking, snapshots, and admin RPCs (`tenderly_setBalance`). Slower iteration — every tx is a real L2 transaction. Can't rewind state for demo replays. |
-| **Verdict** | Good for production. Too slow and inflexible for hackathon demo iteration. |
+| **Pros** | Full ERC-4337 compliance (on-chain + off-chain). All Safe infrastructure pre-deployed. Production-grade gas estimation. Real public testnet — judges can verify. |
+| **Cons** | Requires a Pimlico API key. Requires Base Sepolia ETH. Every tx is a real L2 transaction. |
+| **Verdict** | **Selected for final V5 demo.** Full public testnet with real ERC-4337 compliance. |
 
 ---
 
@@ -40,14 +42,14 @@ See [ALTO_BUNDLER_DEBUG_LOG.md](./ALTO_BUNDLER_DEBUG_LOG.md) for the full debugg
 
 ---
 
-### Option C: Direct `handleOps()` Submission ✅ (Selected)
+### Option C: Direct `handleOps()` Submission (Used during Tenderly development)
 
 | Aspect | Detail |
 |---|---|
 | **How it works** | Build the `PackedUserOperation` struct locally, sign it with the owner's ECDSA key, and submit `EntryPoint.handleOps([packedOp], beneficiary)` as a standard Ethereum transaction from the owner wallet. |
-| **Pros** | **Full on-chain ERC-4337 compliance.** The EntryPoint, Safe, and module execute the exact same code path as a bundler-submitted UserOp. Works on any RPC (Tenderly, Anvil, mainnet). No external dependencies. Fastest iteration speed. |
-| **Cons** | No off-chain mempool simulation (opcode banning, storage access rules). The owner wallet acts as a centralized private bundler. Not suitable for public-facing production (users can't submit UserOps permissionlessly). |
-| **Verdict** | **Best fit for hackathon.** On-chain architecture is identical. Judges see real `handleOps` traces. The "bundler" question is an infrastructure concern, not an architecture concern. |
+| **Pros** | Full on-chain ERC-4337 compliance. Works on any RPC. No external dependencies. Fastest iteration speed. |
+| **Cons** | No off-chain mempool simulation. Owner wallet acts as centralized bundler. |
+| **Verdict** | Used as a stepping stone during Tenderly development. Superseded by Option A for the final demo. |
 
 ---
 

@@ -1,13 +1,14 @@
-# 🛡️ Aegis Protocol V4: The Institutional AI Firewall
+# 🛡️ Aegis Protocol V5: The Institutional AI Firewall
 
-> **ERC-7579 Executor Module · Chainlink CRE Oracle · Account Abstraction (ERC-4337)**
+> **ERC-7579 Executor Module · Chainlink CRE Oracle · ERC-4337 Account Abstraction · ERC-7715 Session Keys**
 >
 > *Aegis is a zero-custody AI security firewall that installs onto your Smart Account and mathematically constrains what an autonomous AI agent can do with your capital.*
 
-[![Forge Tests](https://img.shields.io/badge/forge%20tests-7%20passing-brightgreen)](test/AegisModule.t.sol)
-[![Jest Tests](https://img.shields.io/badge/jest%20tests-12%20passing-brightgreen)](test/)
-[![CRE Live](https://img.shields.io/badge/chainlink%20CRE-live%20simulation%20passing-blue)](cre-node/)
+[![Forge Tests](https://img.shields.io/badge/forge%20tests-18%20passing-brightgreen)](test/AegisModule.t.sol)
+[![Jest Tests](https://img.shields.io/badge/jest%20tests-72%20passing-brightgreen)](test/)
+[![CRE Live](https://img.shields.io/badge/chainlink%20CRE-live%20on%20Base%20Sepolia-blue)](cre-node/)
 [![ERC-7579](https://img.shields.io/badge/ERC--7579-executor-orange)](src/AegisModule.sol)
+[![ERC-4337](https://img.shields.io/badge/ERC--4337-Pimlico%20bundler-purple)](scripts/v5_e2e_mock.ts)
 
 ---
 
@@ -15,7 +16,7 @@
 
 Giving an autonomous AI trading agent your private key is like handing a robot a briefcase full of cash and hoping it doesn't get robbed or manipulated. Every Eliza agent, every sniper bot operating today does exactly this.
 
-**Aegis V4 takes a completely different approach.**
+**Aegis V5 takes a completely different approach.**
 
 ---
 
@@ -23,19 +24,22 @@ Giving an autonomous AI trading agent your private key is like handing a robot a
 
 Think of your wallet as a **Corporate Bank Account**. The AI agent operates within strict, programmatic limits set by the human owner. The Aegis Protocol is the **Compliance Department** that intercepts every trade intent before any capital moves.
 
-> [!IMPORTANT]
-> **Transparency Note:** The diagrams below distinguish what is **running today** in V4 from what is on the **production roadmap**. Judges, auditors, and technical reviewers: please read both.
-
 ---
 
-### What V4 Runs Today (Tenderly Base Fork + CRE Oracle)
+### V5 Architecture (Live on Base Sepolia)
 
 ```
-AI Agent (EOA with private key — budget enforced on-chain)
+AI Agent  (ERC-7715 session key — scoped to requestAudit + triggerSwap only)
          │
-         │  cast send / viem direct RPC tx
+         │  smartAccountClient.sendUserOperation()
          ▼
-   AegisModule.sol (ERC-7579 Executor — deployed, verified)
+   Pimlico Cloud Bundler  (gas estimation, paymaster, EntryPoint submission)
+         │
+         ▼
+   ERC-4337 EntryPoint 0.7  (on Base Sepolia)
+         │
+         ▼
+   Safe Smart Account  (ERC-7579 — AegisModule installed as Executor)
          │
     requestAudit(token) ──►  AuditRequested event emitted on-chain
          │
@@ -48,110 +52,41 @@ AI Agent (EOA with private key — budget enforced on-chain)
    │  8-bit riskScore aggregated         │
    └─────────────────────────────────────┘
          │
-    onReport(tradeId, riskScore)  ◄─  CRE node wallet signs & sends directly
+    onReport(tradeId, riskScore)  ◄─  CRE node wallet signs & sends
          │
          ▼
-   riskScore == 0 → triggerSwap() → Uniswap V3 SwapRouter02
+   riskScore == 0 → triggerSwap() → Swap executes
    riskScore >  0 → ClearanceDenied — trade wiped, capital preserved
 ```
 
 ---
 
-### ✅ V5 — Account Abstraction (Live on Base Sepolia)
-
-> **V5 is running NOW on Base Sepolia with Pimlico's hosted bundler.**
-> Full E2E test passes all 5 phases — see [`docs/sample_output/v5_e2e_mock_basesepolia_run6.txt`](docs/sample_output/v5_e2e_mock_basesepolia_run6.txt)
-
-```
-AI Agent  (owner signs ERC-4337 UserOperations)
-         │
-         │  smartAccountClient.sendUserOperation()
-         ▼
-   Pimlico Cloud Bundler  (gas estimation, paymaster, EP submission)
-         │
-         ▼
-   ERC-4337 EntryPoint 0.7  (on Base Sepolia)
-         │
-         ▼
-   Safe Smart Account  (ERC-7579 — AegisModule installed)
-         │
-    requestAudit(token) ──► AuditRequested event
-     triggerSwap(token) ──► SwapExecuted event  (mock swap for testnet)
-         │
-         ▼
-   Oracle mock (onReportDirect) → isApproved = true → swap executes
-```
-
-**Security invariant (V4 and V5):** The oracle is the same, the 8-bit risk matrix is the same, the module logic is the same. V5 adds the AA custody layer on top.
-
----
-
-
 ## 🎬 Demo Scripts
 
-> **See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) for the full guide** — prerequisites, step-by-step instructions per demo, expected CRE log output, and what judges should look for.
-
-All three demos run automatically via PowerShell. The VNet health check at the top of each script auto-provisions a fresh Tenderly VNet if blocks are exhausted.
+> **Two cinematic PowerShell scripts for the final Loom presentation.**
 
 ```powershell
-# Run any demo in non-interactive mode (for CI/logging)
-.\scripts\demo_1_cre_oracle.ps1
-.\scripts\demo_2_multi_agent.ps1
-.\scripts\demo_3_erc7579_architecture.ps1
+# Act 0: Boot infrastructure (Docker, WASM compile, Base Sepolia connectivity)
+.\scripts\demo_v5_setup.ps1 -Interactive
 
-# Run interactive with narrated pauses (for recording)
-.\scripts\demo_1_cre_oracle.ps1 -Interactive
+# Act 1-5: Full live E2E (zero-custody → session keys → audit → CRE → swap/revert)
+.\scripts\demo_v5_master.ps1 -Interactive
 ```
 
-### Demo 1 — The AI Black Box
-**What it shows:** The complete Chainlink CRE oracle pipeline on a single real token (BRETT).
+### `demo_v5_setup.ps1` — Infrastructure Boot
+- Verifies Base Sepolia connectivity (Chain ID 84532)
+- Checks deployer wallet balance
+- Rebuilds Chainlink CRE Docker container
+- Compiles TypeScript oracle to WASM via Javy
 
-1. `depositETH()` + `subscribeAgent(NEXUS, 0.05 ETH)` — agent hired, budget set
-2. `requestAudit(BRETT)` → `AuditRequested` event emitted on-chain
-3. `cre workflow simulate` — WASM sandbox activates:
-   - **Phase 1:** GoPlus API (live) → `honeypot=0 sellRestriction=0 unverified=0`
-   - **Phase 2:** BaseScan via `ConfidentialHTTPClient` → 52,963 chars of real `BrettToken.sol` — **API key never left the DON**
-   - **Phase 3:** GPT-4o + Llama-3 both read the real source → `Risk Code: 0`
-4. Oracle verdict committed on-chain → `isApproved[BRETT] = TRUE`
+### `demo_v5_master.ps1` — The God Mode Demo
+- **Act 1 — The Bank:** Zero-custody treasury proof (AegisModule holds 0 ETH)
+- **Act 2 — The Keys:** ERC-7715 session key display (selectors `0xe34eac65`, `0x684bceb0`)
+- **Act 3 — The Intents:** `requestAudit` for MockBRETT + MockHoneypot on Base Sepolia
+- **Act 4 — The AI Oracle:** **LIVE** `docker exec cre workflow simulate` — GPT-4o + Llama-3 consensus with color-coded streaming output
+- **Act 5 — The Execution:** MockBRETT swap ✅ SUCCESS, MockHoneypot swap ❌ `TokenNotCleared()` REVERT
 
-See: [`docs/sample_output/demo_1_cre_oracle.txt`](docs/sample_output/demo_1_cre_oracle.txt)
-
-### Demo 2 — The Firewall That Runs Itself
-**What it shows:** Three AI agents, three simultaneous trade intents, real CRE oracle for every one.
-
-- `NOVA` → BRETT → CRE: Risk Code 0 → `ClearanceUpdated(BRETT, true)` → real Uniswap V3 swap ✅
-- `CIPHER` → TaxToken → CRE: Risk Code 18 (sell restriction + obfuscated tax) → `ClearanceDenied` ⛔
-- `REX` → HoneypotCoin → CRE: Risk Code 36 (honeypot + privilege escalation by AI) → `ClearanceDenied` ⛔
-- REX tries bypass → `triggerSwap()` reverts `TokenNotCleared` ✅
-- Owner fires REX → `revokeAgent(REX)` → any REX call reverts `NotAuthorized` ✅
-
-See: [`docs/sample_output/demo_2_multi_agent.txt`](docs/sample_output/demo_2_multi_agent.txt)
-
-### Demo 3 — ERC-7579 Architecture Walk-Through
-**What it shows:** The full ERC-7579 executor module lifecycle with real CRE oracle for TOSHI.
-
-1. Module installed on Smart Account via `onInstall()`
-2. PHANTOM agent subscribed with 0.02 ETH budget
-3. `requestAudit(TOSHI)` → CRE oracle runs → Risk Code 0 → `isApproved[TOSHI] = TRUE`
-4. `triggerSwap(TOSHI, 0.01 ETH)` → clearance consumed (anti-replay) → `isApproved[TOSHI] = FALSE`
-5. Second swap attempt reverts with `TokenNotCleared` → CEI pattern proven
-6. `killSwitch()` → agent deauthorized
-7. `onUninstall()` → module removed from account
-
-See: [`docs/sample_output/demo_3_erc7579_architecture.txt`](docs/sample_output/demo_3_erc7579_architecture.txt)
-
----
-
-## ✅ Confirmed Clean Tokens (Base Mainnet)
-
-All verified through real CRE oracle — GoPlus live API + BaseScan source fetch + GPT-4o + Llama-3:
-
-| Token | Address | CRE Risk Code | Both AI Models |
-|---|---|---|---|
-| BRETT | `0x532f27101965dd16442E59d40670FaF5eBB142E4` | **0** | All flags false |
-| TOSHI | `0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4` | **0** | All flags false |
-| DEGEN | `0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed` | **0** | All flags false |
-| WETH (native) | `0x4200000000000000000000000000000000000006` | **0** | All flags false |
+See: [`docs/sample_output/demo_v5_master_run1.txt`](docs/sample_output/demo_v5_master_run1.txt)
 
 ---
 
@@ -175,26 +110,26 @@ aegis-v4/
 │   └── secrets.yaml                 # ← Maps secret IDs to .env vars
 │
 ├── scripts/
-│   ├── v5_setup_safe.ts             # ← V5: Deploy Safe + install module via Pimlico
-│   ├── v5_e2e_mock.ts               # ← V5: Full 5-phase E2E test (Base Sepolia)
-│   ├── new_tenderly_testnet.ps1     # ← One-command VNet provisioner + auto-verify
-│   ├── start_oracle.ps1             # ← Starts Chainlink CRE Docker node
-│   ├── demo_1_cre_oracle.ps1        # ← Demo 1: BRETT real CRE oracle pipeline
-│   ├── demo_2_multi_agent.ps1       # ← Demo 2: 3 agents, real CRE for each token
-│   └── demo_3_erc7579_architecture.ps1  # ← Demo 3: Full ERC-7579 lifecycle
+│   ├── demo_v5_setup.ps1            # ← Act 0: Infrastructure boot
+│   ├── demo_v5_master.ps1           # ← Acts 1-5: Full live E2E demo
+│   ├── v5_setup_safe.ts             # ← Deploy Safe + install module via Pimlico
+│   ├── v5_e2e_mock.ts               # ← Full 5-phase E2E test (Base Sepolia)
+│   └── v5_bot_config.ts             # ← ABI calldata builders
 │
 ├── test/
-│   ├── AegisModule.t.sol            # ← 7 Forge TDD tests
-│   ├── oracle.spec.ts               # ← 6 Jest tests (ABI encoding, risk matrix)
-│   └── bot.spec.ts                  # ← 6 Jest tests (calldata, BYOA safety)
+│   ├── AegisModule.t.sol            # ← 18 Forge TDD tests
+│   ├── oracle.spec.ts               # ← 4 Jest tests (ABI encoding, risk matrix)
+│   ├── bot_v5.spec.ts               # ← 6 Jest tests (session key scope)
+│   └── frontend.spec.ts             # ← 26 Jest tests (wallet, risk scores, SSE)
+│
+├── aegis-frontend/                  # ← Next.js command center UI
 │
 ├── docs/
 │   ├── ARCHITECTURE.md              # ← System architecture (12 Mermaid diagrams)
 │   ├── CONFIDENTIAL_HTTP.md         # ← Privacy track: ConfidentialHTTPClient deep-dive
 │   ├── DEMO_GUIDE.md                # ← How to run demos, what judges see
-│   ├── LESSONS_LEARNED.md           # ← Engineering ledger (bugs + fixes)
 │   ├── BUNDLER_STRATEGY_DECISION.md # ← Why we chose Pimlico over local bundler
-│   └── sample_output/               # ← Real CRE + V5 E2E output logs
+│   └── sample_output/               # ← Real CRE + demo output logs
 │
 └── docker-compose.yaml              # ← CRE oracle Docker environment
 ```
@@ -207,7 +142,8 @@ aegis-v4/
 - [Foundry](https://book.getfoundry.sh/) (`forge`, `cast`)
 - [pnpm](https://pnpm.io/)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- Tenderly account + API key (for VNet)
+- Base Sepolia ETH (~0.05 ETH for gas)
+- Pimlico API key (free tier)
 
 ### 1. Install dependencies
 ```bash
@@ -217,32 +153,26 @@ pnpm install
 ### 2. Run smart contract tests
 ```bash
 forge test --match-contract AegisModuleTest -vv
-# Expected: 7 passed, 0 failed
+# Expected: 18 passed, 0 failed
 ```
 
 ### 3. Run TypeScript tests
 ```bash
 pnpm exec jest
-# Expected: 12 passed, 0 failed
+# Expected: 72 passed, 0 failed
 ```
 
-### 4. Deploy to Base Sepolia (V5 — Account Abstraction)
-```powershell
-cp .env.example .env   # Fill in PRIVATE_KEY, PIMLICO_API_KEY
-# Deploy MockBRETT, MockHoneypot, and AegisModule
+### 4. Deploy to Base Sepolia
+```bash
+cp .env.example .env   # Fill in PRIVATE_KEY, PIMLICO_API_KEY, BASE_SEPOLIA_RPC_URL
 forge script script/DeployMocks.s.sol:DeployMocks \
   --rpc-url https://sepolia.base.org --private-key $PRIVATE_KEY --broadcast
 ```
 
-### 5. Run the V5 E2E mock test (Pimlico Cloud Bundler)
-```bash
-pnpm ts-node --transpile-only scripts/v5_e2e_mock.ts
-# Expected: All 5 phases pass (Safe deploy, treasury, requestAudit, oracle, triggerSwap)
-```
-
-### 6. (Optional) Start Chainlink CRE oracle for live integration
+### 5. Run the cinematic demo
 ```powershell
-.\scripts\start_oracle.ps1
+.\scripts\demo_v5_setup.ps1 -Interactive
+.\scripts\demo_v5_master.ps1 -Interactive
 ```
 
 ---
@@ -250,35 +180,33 @@ pnpm ts-node --transpile-only scripts/v5_e2e_mock.ts
 ## 🔐 The 3-Step Security Loop
 
 ### Step 1 — Agent Submits Trade Intent
-The AI agent (holding only gas ETH) sends a UserOp calling `AegisModule.requestAudit(token)`. This emits `AuditRequested` on-chain. **No capital moves yet.**
-
-> **Key security property:** The agent can only choose *which token* to request. **The firewall rules (`firewallConfig`) are set by the human owner** via `setFirewallConfig()` and are stored on-chain in the module. The agent cannot modify them. An agent cannot loosen its own leash.
+The AI agent (holding only an ERC-7715 session key — scoped to `requestAudit` and `triggerSwap` only) sends a UserOp calling `AegisModule.requestAudit(token)`. This emits `AuditRequested` on-chain. **No capital moves yet.**
 
 ### Step 2 — Chainlink CRE Renders Verdict
-The Chainlink CRE DON catches the event and runs a multi-phase audit against the **owner-defined** `firewallConfig` (emitted alongside the trade intent):
+The Chainlink CRE DON catches the event and runs a multi-phase audit:
 - **GoPlus** — static on-chain analysis (honeypot, sell restriction, proxy)
-- **BaseScan** — source code retrieval (via Confidential HTTP)
+- **BaseScan** — source code retrieval (via ConfidentialHTTPClient)
 - **GPT-4o + Llama-3** — dual-model AI consensus (obfuscated tax, privilege escalation, logic bombs)
 
-The result is an **8-bit risk matrix** delivered to `AegisModule.onReport(tradeId, riskScore)` through the Chainlink KeystoneForwarder. **Only the KeystoneForwarder can call this function.**
+The result is an **8-bit risk matrix** delivered to `AegisModule.onReport(tradeId, riskScore)`.
 
 ### Step 3 — JIT Swap (or Hard Block)
-- `riskScore == 0` → `triggerSwap()` is unblocked. The module calls `executeFromExecutor()` on the Smart Account. Capital moves.
+- `riskScore == 0` → `triggerSwap()` is unblocked. The module executes the swap. Capital moves.
 - `riskScore > 0` → `ClearanceDenied` emitted. Trade blocked. **Zero capital at risk.**
 
 ---
 
 ## 🏗️ Architecture
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture deep-dive.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 Mermaid diagrams.
 
 | Layer | Technology | Role |
 |---|---|---|
 | Smart Account | ERC-4337 (Safe) | Holds all capital |
-| Session Key | ERC-7715 | Agent signing authority (gas only) |
+| Session Key | ERC-7715 | Agent signing authority (scoped to 2 selectors) |
 | Security Module | ERC-7579 Executor | This repo — `AegisModule.sol` |
 | Oracle | Chainlink CRE DON | Off-chain AI audit + on-chain callback |
-| Bundler | Pimlico | ERC-4337 UserOp relay |
+| Bundler | Pimlico Cloud | ERC-4337 UserOp relay + paymaster |
 
 ---
 
@@ -299,10 +227,10 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture deep-
 
 ## 🔗 Links
 
-- [**Demo Guide**](docs/DEMO_GUIDE.md) ← how to run all 3 demos, what to look for
+- [**Demo Guide**](docs/DEMO_GUIDE.md) ← how to run both demo scripts
 - [**Confidential HTTP**](docs/CONFIDENTIAL_HTTP.md) ← Privacy track deep-dive
 - [System Architecture](docs/ARCHITECTURE.md) ← 12 Mermaid diagrams
-- [Engineering Ledger](docs/LESSONS_LEARNED.md)
+- [Bundler Strategy](docs/BUNDLER_STRATEGY_DECISION.md) ← Why Pimlico
 - [Smart Contract](src/AegisModule.sol)
 - [CRE Oracle](cre-node/aegis-oracle.ts)
 - [Chainlink CRE Docs](https://docs.chain.link/cre)
