@@ -129,7 +129,7 @@ async function buildSystemContext(): Promise<string> {
         // ── Agents with full detail ───────────────────────────────────────────
         const agentLogs = await publicClient.getLogs({
             address: moduleAddr,
-            event: MODULE_ABI[1] as any,
+            event: MODULE_ABI[2] as any, // AgentSubscribed event
             fromBlock,
         }).catch(() => []);
 
@@ -166,8 +166,8 @@ async function buildSystemContext(): Promise<string> {
 
         // ── Recent audit verdicts ─────────────────────────────────────────────
         const [clearedLogs, deniedLogs] = await Promise.all([
-            publicClient.getLogs({ address: moduleAddr, event: MODULE_ABI[2], fromBlock }).catch(() => []),
-            publicClient.getLogs({ address: moduleAddr, event: MODULE_ABI[3], fromBlock }).catch(() => []),
+            publicClient.getLogs({ address: moduleAddr, event: MODULE_ABI[3] as any, fromBlock }).catch(() => []), // ClearanceUpdated
+            publicClient.getLogs({ address: moduleAddr, event: MODULE_ABI[4] as any, fromBlock }).catch(() => []), // ClearanceDenied
         ]);
         const TOKEN_NAMES: Record<string, string> = {
             '0x532f27101965dd16442e59d40670faf5ebb142e4': 'BRETT',
