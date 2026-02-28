@@ -1,11 +1,11 @@
 /**
- * oracle.spec.ts — Unit test for the Aegis CRE Oracle V4 integration.
+ * oracle.spec.ts — Unit test for the Aegis CRE Oracle V5 integration.
  *
  * Tests:
  *   1. onReport ABI encoding: (uint256 tradeId, uint256 riskScore) → 64-byte hex
  *   2. riskScore > 0 encodes correctly (honeypot bit = 4)
  *   3. Oracle config targets AegisModule (not AegisVault V3)
- *   4. V4 config shape matches expected CRE workflow.yaml schema
+ *   4. V5 config shape matches expected CRE workflow.yaml schema
  *
  * Note: viem's encodeAbiParameters is NOT used directly in tests to avoid
  * ts-jest resolution issues. Instead we test the ABI encoding math directly,
@@ -22,7 +22,7 @@ function encodeUint256Pair(a: bigint, b: bigint): string {
 
 const AEGIS_MODULE_ADDRESS = "0x1234567890123456789012345678901234567890";
 
-describe("Aegis CRE Oracle V4 — ABI encoding", () => {
+describe("Aegis CRE Oracle V5 — ABI encoding", () => {
     /**
      * Test 1: Clean verdict (riskScore=0) encodes correctly.
      */
@@ -83,31 +83,31 @@ describe("Aegis CRE Oracle V4 — ABI encoding", () => {
     });
 
     /**
-     * Test 5: V4 config shape matches CRE workflow.yaml schema.
+     * Test 5: V5 config shape matches CRE workflow.yaml schema.
      */
-    test("V4 config shape has required CRE fields", () => {
-        const v4Config = {
+    test("V5 config shape has required CRE fields", () => {
+        const V5Config = {
             vaultAddress: AEGIS_MODULE_ADDRESS,
             chainSelectorName: "base-mainnet",
         };
-        expect(v4Config).toHaveProperty("vaultAddress");
-        expect(v4Config).toHaveProperty("chainSelectorName");
+        expect(V5Config).toHaveProperty("vaultAddress");
+        expect(V5Config).toHaveProperty("chainSelectorName");
     });
 
     /**
-     * Test 6: V3 vs V4 — only the receiver address changes.
+     * Test 6: V3 vs V5 — only the receiver address changes.
      * The onReport ABI signature is identical.
      */
-    test("V3 and V4 onReport ABI encoding is identical (same uint256,uint256 schema)", () => {
+    test("V3 and V5 onReport ABI encoding is identical (same uint256,uint256 schema)", () => {
         const tradeId = BigInt(5);
         const riskScore = BigInt(0);
 
-        // Simulate what V3 and V4 oracles both produce
+        // Simulate what V3 and V5 oracles both produce
         const v3Encoded = encodeUint256Pair(tradeId, riskScore);
-        const v4Encoded = encodeUint256Pair(tradeId, riskScore);
+        const V5Encoded = encodeUint256Pair(tradeId, riskScore);
 
         // The encoding is identical — only the receiver contract address differs
-        expect(v3Encoded).toBe(v4Encoded);
+        expect(v3Encoded).toBe(V5Encoded);
     });
 });
 

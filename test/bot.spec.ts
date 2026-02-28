@@ -1,5 +1,5 @@
 /**
- * bot.spec.ts — Unit tests for the V4 BYOA Agent (ERC-4337 bot)
+ * bot.spec.ts — Unit tests for the V5 BYOA Agent (ERC-4337 bot)
  *
  * Tests:
  *   1. AegisAgent constructs with required config (vault + pimlico key)
@@ -50,7 +50,7 @@ const MOCK_CONFIG = {
 };
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
-describe("AegisAgent V4 — ERC-4337 Bot", () => {
+describe("AegisAgent V5 — ERC-4337 Bot", () => {
     /**
      * Test 1: Config validation — agent requires all 5 fields.
      */
@@ -99,7 +99,7 @@ describe("AegisAgent V4 — ERC-4337 Bot", () => {
         const smartAccount = "0xSmartAccount__HoldsFunds"; // holds trading capital
 
         expect(agentWallet).not.toBe(smartAccount);
-        // In V4, agent wallet funds gas. Smart Account funds trades.
+        // In V5, agent wallet funds gas. Smart Account funds trades.
         // This is the core BYOA safety guarantee.
         expect(agentWallet).toBeDefined();
         expect(smartAccount).toBeDefined();
