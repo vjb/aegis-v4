@@ -13,14 +13,14 @@ graph TD
     Aegis["🛡️ AegisModule\nERC-7579 Executor on Smart Account"]
     CRE["🔗 Chainlink CRE DON\nWASM oracle · GoPlus · AI models"]
     SA["💰 Smart Account (Safe)\nHolds ALL capital"]
-    Uni["🔄 Uniswap V3\nExecutes the actual swap"]
+    Swap["🔄 Simulated Swap\nETH transfer + SwapExecuted event"]
 
     Owner -->|"install · budget · kill"| Aegis
     Agent -->|"requestAudit(token)"| Aegis
     Aegis -->|"emits AuditRequested"| CRE
     CRE -->|"onReport(tradeId, riskScore)"| Aegis
     Aegis -->|"executeFromExecutor() on clearance"| SA
-    SA -->|"exactInputSingle()"| Uni
+    SA -->|"triggerSwap() — simulated"| Swap
 ```
 
 ---
@@ -47,7 +47,7 @@ graph LR
     subgraph Outputs
         E["emit AuditRequested"]
         F["emit ClearanceUpdated / ClearanceDenied"]
-        G["executeFromExecutor() → Uniswap"]
+        G["triggerSwap() — simulated swap"]
     end
 
     A --> TR --> E
@@ -139,8 +139,8 @@ sequenceDiagram
     Safe->>AM: triggerSwap
     AM->>AM: check allowance ✓ · consume clearance (CEI)
     AM->>Safe: executeFromExecutor
-    Safe->>Uniswap: exactInputSingle
-    Uniswap-->>Safe: BRETT received
+    Safe->>Module: triggerSwap(BRETT)
+    Module-->>Safe: SwapExecuted event emitted
 ```
 
 ---
@@ -162,7 +162,7 @@ flowchart TD
     end
 
     subgraph Results
-        R1["✅ APPROVED\nNOVA executes Uniswap swap"]
+        R1["✅ APPROVED\nNOVA executes triggerSwap"]
         R2["🔴 BLOCKED\nCIPHER stands down"]
         R3["🔴 BLOCKED\nREX denied · bypass attempt reverts"]
     end
@@ -258,7 +258,7 @@ sequenceDiagram
 
     Agent->>AM: triggerSwap(BRETT, 0.01 ETH)
     AM->>AM: agentAllowances -= 0.01 ETH
-    AM->>Uniswap: swap executes
+    AM->>Safe: triggerSwap() — simulated
     Note right of AM: Budget remaining: 0.04 ETH
 
     Owner->>AM: killSwitch()
@@ -346,7 +346,7 @@ sequenceDiagram
     participant LLM as GPT-4o + Llama-3
     participant KF as KeystoneForwarder
     participant Safe as Smart Account
-    participant Uni as Uniswap V3
+    participant Swap as Simulated Swap
 
     Agent->>AM: requestAudit(BRETT)
     AM-->>GP: emit AuditRequested → CRE activates
