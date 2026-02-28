@@ -43,30 +43,49 @@ export async function GET(req: NextRequest) {
         const env = loadEnv();
         const { publicClient, moduleAddr } = getClients(env);
 
-        // Base Sepolia limits eth_getLogs to 10,000 blocks — query recent history only
+        // Progressive block range — try larger range first, fall back if RPC limits
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > BigInt(9000) ? currentBlock - BigInt(9000) : BigInt(0);
-        const logs = await publicClient.getLogs({
-            address: moduleAddr,
-            event: { type: 'event', name: 'AgentSubscribed', inputs: [{ type: 'address', name: 'agent', indexed: true }, { type: 'uint256', name: 'budget', indexed: false }] } as any,
-            fromBlock,
-        });
+        let logs: any[] = [];
+        const ranges = [BigInt(50000), BigInt(9000), BigInt(2000)];
+        for (const range of ranges) {
+            const fromBlock = currentBlock > range ? currentBlock - range : BigInt(0);
+            try {
+                logs = await publicClient.getLogs({
+                    address: moduleAddr,
+                    event: { type: 'event', name: 'AgentSubscribed', inputs: [{ type: 'address', name: 'agent', indexed: true }, { type: 'uint256', name: 'budget', indexed: false }] } as any,
+                    fromBlock,
+                });
+                break; // success
+            } catch (e: any) {
+                if (e.message?.includes('413') || e.message?.includes('10,000')) continue; // try smaller range
+                throw e;
+            }
+        }
 
-        // Get unique agent addresses
+        // Get unique agent addresses from events
         const seen = new Set<string>();
         const addresses: string[] = [];
         for (const log of logs) {
             const addr = (log.topics[1] as string);
             // Decode indexed address from topic (32 bytes → last 20 bytes)
             const decoded = '0x' + addr.slice(-40);
-            if (!seen.has(decoded)) { seen.add(decoded); addresses.push(decoded); }
+            if (!seen.has(decoded.toLowerCase())) { seen.add(decoded.toLowerCase()); addresses.push(decoded); }
+        }
+
+        // Fallback: also check known agent addresses from .env
+        const knownAgents = [
+            env.AGENT_WALLET_ADDRESS,
+            env.DEV_WALLET_ADDRESS,
+        ].filter(Boolean).map(a => a!.toLowerCase());
+        for (const ka of knownAgents) {
+            if (!seen.has(ka)) { seen.add(ka); addresses.push(ka); }
         }
 
         // Read allowances for each
         const agents = await Promise.all(addresses.map(async addr => {
             const allowance = await publicClient.readContract({
                 address: moduleAddr, abi: ABI, functionName: 'agentAllowances', args: [addr as `0x${string}`]
-            });
+            }).catch(() => BigInt(0));
             return {
                 address: addr,
                 allowance: allowance.toString(),
@@ -75,6 +94,9 @@ export async function GET(req: NextRequest) {
             };
         }));
 
+        // Filter out agents with zero allowance that were only found via fallback (not from events)
+        const filteredAgents = agents.filter(a => a.active || logs.some((l: any) => ('0x' + (l.topics[1] as string).slice(-40)).toLowerCase() === a.address.toLowerCase()));
+
         // Also get treasury balance
         let treasury = '0';
         try {
@@ -82,7 +104,7 @@ export async function GET(req: NextRequest) {
             treasury = (Number(bal) / 1e18).toFixed(6);
         } catch { /* module may not hold ETH directly */ }
 
-        return NextResponse.json({ agents, treasury, moduleAddress: moduleAddr });
+        return NextResponse.json({ agents: filteredAgents, treasury, moduleAddress: moduleAddr });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

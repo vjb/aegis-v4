@@ -46,9 +46,16 @@ export async function GET() {
 
         const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpc) });
 
-        // Base Sepolia limits eth_getLogs to 10,000 blocks
+        // Progressive block range — try larger, fall back if RPC limits
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > BigInt(9000) ? currentBlock - BigInt(9000) : BigInt(0);
+        let fromBlock = currentBlock > BigInt(50000) ? currentBlock - BigInt(50000) : BigInt(0);
+        try {
+            await publicClient.getLogs({ address: moduleAddr, event: ABI[0], fromBlock });
+        } catch (e: any) {
+            if (e.message?.includes('413') || e.message?.includes('10,000')) {
+                fromBlock = currentBlock > BigInt(9000) ? currentBlock - BigInt(9000) : BigInt(0);
+            }
+        }
 
         const [auditLogs, clearedLogs, deniedLogs, swapLogs] = await Promise.all([
             publicClient.getLogs({ address: moduleAddr, event: ABI[0], fromBlock }).catch(() => []),

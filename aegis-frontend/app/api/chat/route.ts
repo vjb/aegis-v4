@@ -67,9 +67,22 @@ async function buildSystemContext(): Promise<string> {
         const moduleAddr = getAddress(moduleAddrRaw);
         const publicClient = createPublicClient({ chain: aegisChain, transport: http(rpc) });
 
-        // Base Sepolia limits eth_getLogs to 10,000 blocks
+        // Progressive block range — try larger, fall back if RPC limits
         const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > BigInt(9000) ? currentBlock - BigInt(9000) : BigInt(0);
+        const getFromBlock = async (): Promise<bigint> => {
+            for (const range of [BigInt(50000), BigInt(9000), BigInt(2000)]) {
+                const fb = currentBlock > range ? currentBlock - range : BigInt(0);
+                try {
+                    await publicClient.getLogs({ address: moduleAddr, event: MODULE_ABI[2] as any, fromBlock: fb, toBlock: currentBlock });
+                    return fb;
+                } catch (e: any) {
+                    if (e.message?.includes('413') || e.message?.includes('10,000')) continue;
+                    return fb;
+                }
+            }
+            return currentBlock > BigInt(2000) ? currentBlock - BigInt(2000) : BigInt(0);
+        };
+        const fromBlock = await getFromBlock();
 
         // ── Owner wallet ──────────────────────────────────────────────────────
         let ownerAddr = 'unknown';
