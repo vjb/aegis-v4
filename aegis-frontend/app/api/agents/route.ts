@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 const ABI = [
     { type: 'function', name: 'agentAllowances', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
     { type: 'function', name: 'subscribeAgent', inputs: [{ type: 'address', name: 'agent' }, { type: 'uint256', name: 'budget' }], outputs: [], stateMutability: 'nonpayable' },
-    { type: 'function', name: 'unsubscribeAgent', inputs: [{ type: 'address', name: 'agent' }], outputs: [], stateMutability: 'nonpayable' },
+    { type: 'function', name: 'revokeAgent', inputs: [{ type: 'address', name: 'agent' }], outputs: [], stateMutability: 'nonpayable' },
     { type: 'function', name: 'getTreasuryBalance', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' },
     { type: 'event', name: 'AgentSubscribed', inputs: [{ type: 'address', name: 'agent', indexed: true }, { type: 'uint256', name: 'budget', indexed: false }] },
 ] as const;
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
             });
         } else if (action === 'revoke') {
             hash = await walletClient.writeContract({
-                address: moduleAddr, abi: ABI, functionName: 'unsubscribeAgent',
+                address: moduleAddr, abi: ABI, functionName: 'revokeAgent',
                 args: [getAddress(agentAddress)],
             });
         } else {
