@@ -1,13 +1,13 @@
 // @ts-nocheck
 /**
- * Aegis Protocol V4 — CRE Oracle
+ * Aegis Protocol V5 — CRE Oracle
  *
- * V4 Change Summary (from V3):
- *   - `vaultAddress` now refers to the AegisModule (ERC-7579 Executor),
- *     not the standalone AegisVault treasury.
- *   - onReport ABI is UNCHANGED: (uint256 tradeId, uint256 riskScore)
- *   - All audit logic (GoPlus, BaseScan, GPT-4o, Llama-3) is preserved.
- *   - The module still uses `writeReport()` via EVMClient → KeystoneForwarder.
+ * Architecture:
+ *   - `vaultAddress` refers to the AegisModule (ERC-7579 Executor on Safe Smart Account)
+ *   - onReport ABI: (uint256 tradeId, uint256 riskScore)
+ *   - 3-phase audit: GoPlus (static) → BaseScan (source) → GPT-4o + Llama-3 (AI consensus)
+ *   - Deployed on Base Sepolia (chain ID 84532)
+ *   - Uses `writeReport()` via EVMClient → KeystoneForwarder
  *
  * CRE Best Practices:
  *   - Phase 1 (GoPlus) runs in runInNodeMode — non-BFT API, manual aggregation.
