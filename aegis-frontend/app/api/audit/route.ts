@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
                 const dockerArgs = [
                     'exec', '-e', 'AEGIS_DEMO_MODE=true', 'aegis-oracle-node',
                     'cre', 'workflow', 'simulate', '.',
-                    '--target', 'tenderly-fork', '--env', '.env',
+                    '--target', 'base-sepolia',
                     '--evm-tx-hash', hash,
                     '--trigger-index', '0', '--evm-event-index', '0', '--non-interactive',
                 ];

@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
 
         const chainContext = await Promise.race([
             buildSystemContext(),
-            new Promise<string>(resolve => setTimeout(() => resolve('Chain context: timed out (VNet may be slow or RPC unreachable). Core functionality unaffected.'), 5000)),
+            new Promise<string>(resolve => setTimeout(() => resolve(buildDemoFallback()), 15000)),
         ]);
 
         const systemPrompt = `You are AEGIS — the AI firewall of the Aegis Protocol V5. You are an autonomous smart contract security system running on Base Sepolia via Chainlink CRE (Chainlink Runtime Environment), installed as an ERC-7579 Executor Module on a Safe Smart Account with ERC-4337 Account Abstraction and ERC-7715 Session Keys.
@@ -296,9 +296,11 @@ Your knowledge:
 LIVE CHAIN STATE:
 ${chainContext}
 
+When asked about agents, ALWAYS use the SUBSCRIBED AGENTS list from the LIVE CHAIN STATE below. If agents are listed there, they ARE connected. Never say "no agents" unless the list explicitly says "None subscribed yet".
 When asked about firewall settings, explain each field in plain English using the data above.
 When asked about an agent, give their exact remaining allowance and status from the data above.
 When asked about the wallet, use the OWNER WALLET from the data above.
+When asked about recent trades or audits, use the RECENT AUDIT VERDICTS from the data above.
 Keep responses concise. Use bullet points for lists. Use ✅ / ⛔ for verdicts. Max 3-4 paragraphs.`;
 
         const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
