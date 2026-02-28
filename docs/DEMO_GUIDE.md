@@ -53,7 +53,7 @@ docker compose up --build -d
 ## Demo 1 — Infrastructure Boot (`demo_v5_setup.ps1`)
 
 **Time:** ~2 minutes
-**Prize tracks:** CRE & AI · Tenderly VNets
+**Prize tracks:** CRE & AI · Risk & Compliance
 
 ### What It Proves
 

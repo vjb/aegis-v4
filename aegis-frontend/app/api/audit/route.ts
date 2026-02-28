@@ -4,16 +4,9 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { createWalletClient, createPublicClient, http, getAddress, parseEventLogs, parseEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { defineChain } from 'viem';
+import { baseSepolia } from 'viem/chains';
 
 export const dynamic = 'force-dynamic';
-
-const aegisTenderly = defineChain({
-    id: 73578453,
-    name: 'Aegis Tenderly VNet',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [] } },
-});
 
 const Tokens: Record<string, string> = {
     'WETH': '0x4200000000000000000000000000000000000006',
@@ -80,22 +73,18 @@ export async function GET(req: NextRequest) {
                 if (!fs.existsSync(envPath)) throw new Error('Root .env not found at ' + envPath);
 
                 const envContent = fs.readFileSync(envPath, 'utf8');
-                let privateKey = '', tenderlyRpc = '', moduleAddr = '', tenderlyId = '';
+                let privateKey = '', rpcUrl = '', moduleAddr = '', explorerBase = '';
 
                 envContent.split('\n').forEach(line => {
                     const [k, ...rest] = line.split('=');
                     const v = rest.join('=').trim();
                     if (k === 'PRIVATE_KEY') privateKey = v;
-                    if (k === 'TENDERLY_RPC_URL') tenderlyRpc = v;
-                    if (k === 'TENDERLY_TESTNET_UUID') tenderlyId = v;
+                    if (k === 'BASE_SEPOLIA_RPC_URL' || (k === 'TENDERLY_RPC_URL' && !rpcUrl)) rpcUrl = v;
                     if (k === 'AEGIS_MODULE_ADDRESS') moduleAddr = v;
                 });
 
                 if (!privateKey.startsWith('0x')) privateKey = `0x${privateKey}`;
-                if (!tenderlyId) {
-                    const m = tenderlyRpc.match(/\/([0-9a-f-]{36})$/i);
-                    if (m) tenderlyId = m[1];
-                }
+                explorerBase = 'https://sepolia.basescan.org/tx';
 
                 if (!targetAddress) {
                     send({ type: 'error', message: `Unknown token: ${tokenArg}. Use BRETT, TOSHI, DEGEN, WETH, or a known token name.` });
@@ -103,8 +92,8 @@ export async function GET(req: NextRequest) {
                 }
 
                 const account = privateKeyToAccount(privateKey as `0x${string}`);
-                const walletClient = createWalletClient({ account, chain: aegisTenderly, transport: http(tenderlyRpc) });
-                const publicClient = createPublicClient({ chain: aegisTenderly, transport: http(tenderlyRpc) });
+                const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(rpcUrl) });
+                const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) });
 
                 send({ type: 'phase', phase: 'Connecting to Chainlink CRE DON' });
                 send({ type: 'phase', phase: `Submitting requestAudit(${targetToken}) on-chain` });
@@ -123,7 +112,7 @@ export async function GET(req: NextRequest) {
                     if (logs.length > 0) tradeId = (logs[0] as any).args.tradeId;
                 } catch { /* best effort */ }
 
-                send({ type: 'tx', hash, explorerBaseUrl: tenderlyId ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx` : '' });
+                send({ type: 'tx', hash, explorerBaseUrl: explorerBase });
                 send({ type: 'phase', phase: 'Spinning up Oracle Brain' });
                 // Note: GoPlus and BaseScan phases are emitted by processLine via __GOPLUS_START__ etc. markers
 
@@ -271,8 +260,8 @@ export async function GET(req: NextRequest) {
                                 : (safe & 2) ? `Sell restriction / high tax detected (Bit 1). GoPlus flagged this token. Risk Code ${safe} committed on-chain.`
                                     : `CRE audit flagged this token. Risk Code ${safe} committed on-chain via onReportDirect().`;
 
-                const explorerUrl = tenderlyId ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx/${hash}` : '';
-                const callbackUrl = callbackHash && tenderlyId ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx/${callbackHash}` : null;
+                const explorerUrl = `${explorerBase}/${hash}`;
+                const callbackUrl = callbackHash ? `${explorerBase}/${callbackHash}` : null;
 
                 send({ type: 'final_verdict', payload: { status, score: extractedScore, reasoning, checks, targetToken, hash, explorerUrl, callbackExplorerUrl: callbackUrl } });
                 controller.close();

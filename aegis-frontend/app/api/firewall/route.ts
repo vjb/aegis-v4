@@ -3,16 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { createPublicClient, createWalletClient, http, getAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { defineChain } from 'viem';
+import { baseSepolia } from 'viem/chains';
 
 export const dynamic = 'force-dynamic';
-
-const aegisTenderly = defineChain({
-    id: 73578453,
-    name: 'Aegis Tenderly VNet',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [] } },
-});
 
 const FIREWALL_ABI = [
     {
@@ -35,20 +28,28 @@ function loadEnv() {
         const [k, ...rest] = line.split('=');
         if (k && rest.length) env[k.trim()] = rest.join('=').trim();
     });
+    // Also merge process.env for keys set via .env.local
+    ['BASE_SEPOLIA_RPC_URL', 'TENDERLY_RPC_URL', 'AEGIS_MODULE_ADDRESS', 'PRIVATE_KEY'].forEach(k => {
+        if (process.env[k]) env[k] = process.env[k]!;
+    });
     return env;
+}
+
+function getRpc(env: Record<string, string>): string | undefined {
+    return env.BASE_SEPOLIA_RPC_URL || env.TENDERLY_RPC_URL;
 }
 
 // GET — read current on-chain firewallConfig
 export async function GET() {
     try {
         const env = loadEnv();
-        const rpc = env.TENDERLY_RPC_URL;
+        const rpc = getRpc(env);
         const moduleAddrRaw = env.AEGIS_MODULE_ADDRESS;
         if (!rpc || !moduleAddrRaw) {
-            return NextResponse.json({ error: 'TENDERLY_RPC_URL or AEGIS_MODULE_ADDRESS not set' }, { status: 500 });
+            return NextResponse.json({ error: 'RPC URL or AEGIS_MODULE_ADDRESS not set in .env' }, { status: 500 });
         }
         const moduleAddr = getAddress(moduleAddrRaw);
-        const publicClient = createPublicClient({ chain: aegisTenderly, transport: http(rpc) });
+        const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpc) });
 
         const raw = await publicClient.readContract({
             address: moduleAddr,
@@ -74,16 +75,16 @@ export async function POST(req: NextRequest) {
         }
 
         const env = loadEnv();
-        const rpc = env.TENDERLY_RPC_URL;
+        const rpc = getRpc(env);
         const moduleAddrRaw = env.AEGIS_MODULE_ADDRESS;
         const ownerKey = env.PRIVATE_KEY;
         if (!rpc || !moduleAddrRaw || !ownerKey) {
-            return NextResponse.json({ error: 'TENDERLY_RPC_URL, AEGIS_MODULE_ADDRESS or PRIVATE_KEY missing in .env' }, { status: 500 });
+            return NextResponse.json({ error: 'RPC URL, AEGIS_MODULE_ADDRESS or PRIVATE_KEY missing in .env' }, { status: 500 });
         }
 
         const moduleAddr = getAddress(moduleAddrRaw);
         const account = privateKeyToAccount(ownerKey as `0x${string}`);
-        const walletClient = createWalletClient({ chain: aegisTenderly, transport: http(rpc), account });
+        const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpc), account });
 
         const configJson = JSON.stringify(config);
         const hash = await walletClient.writeContract({
@@ -93,9 +94,7 @@ export async function POST(req: NextRequest) {
             args: [configJson],
         });
 
-        // Build explorer URL
-        const explorerBase = env.TENDERLY_EXPLORER_BASE || '';
-        const explorerUrl = explorerBase ? `${explorerBase}/tx/${hash}` : '';
+        const explorerUrl = `https://sepolia.basescan.org/tx/${hash}`;
 
         return NextResponse.json({ hash, explorerUrl, configJson });
     } catch (e: any) {

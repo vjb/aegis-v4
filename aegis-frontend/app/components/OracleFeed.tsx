@@ -321,13 +321,13 @@ export default function OracleFeed({ isKilled, externalTrigger, onTriggerConsume
                                         {run.verdict.explorerUrl && (
                                             <a href={run.verdict.explorerUrl} target="_blank" rel="noreferrer"
                                                 className="mono text-xs" style={{ color: 'var(--cyan)', fontSize: 10 }}>
-                                                requestAudit() → Tenderly ↗
+                                                requestAudit() → BaseScan ↗
                                             </a>
                                         )}
                                         {run.verdict.callbackExplorerUrl && (
                                             <a href={run.verdict.callbackExplorerUrl} target="_blank" rel="noreferrer"
                                                 className="mono text-xs" style={{ color: 'var(--cyan)', fontSize: 10 }}>
-                                                onReportDirect() → Tenderly ↗
+                                                onReportDirect() → BaseScan ↗
                                             </a>
                                         )}
                                     </div>

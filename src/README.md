@@ -22,7 +22,7 @@ An **ERC-7579 Type-2 Executor Module** that installs onto any ERC-7579-compatibl
 | `triggerSwap(address token, uint256 amount)` | Agent / Smart Account | Executes swap if cleared |
 | `onInstall(bytes)` / `onUninstall(bytes)` | Smart Account | ERC-7579 lifecycle hooks |
 
-**Deployed:** `0xE5D4716ba20DefCc50C863952474A0edc3574A2B` (Base Tenderly VNet)
+**Deployed:** `0xE5D4716ba20DefCc50C863952474A0edc3574A2B` (Base Sepolia)
 
 ---
 

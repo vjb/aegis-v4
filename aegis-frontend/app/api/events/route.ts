@@ -2,16 +2,11 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { createPublicClient, http, getAddress, decodeEventLog } from 'viem';
-import { defineChain } from 'viem';
+import { baseSepolia } from 'viem/chains';
 
 export const dynamic = 'force-dynamic';
 
-const aegisTenderly = defineChain({
-    id: 73578453,
-    name: 'Aegis Tenderly VNet',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [] } },
-});
+
 
 const ABI = [
     { type: 'event', name: 'AuditRequested', inputs: [{ type: 'uint256', name: 'tradeId', indexed: true }, { type: 'address', name: 'user', indexed: true }, { type: 'address', name: 'targetToken', indexed: true }, { type: 'string', name: 'firewallConfig', indexed: false }] },
@@ -45,16 +40,13 @@ export async function GET() {
             if (k && rest.length) env[k.trim()] = rest.join('=').trim();
         });
 
-        const rpc = env.TENDERLY_RPC_URL;
+        const rpc = env.BASE_SEPOLIA_RPC_URL || env.TENDERLY_RPC_URL || '';
         const moduleAddr = getAddress(env.AEGIS_MODULE_ADDRESS);
-        const tenderlyId = env.TENDERLY_TESTNET_UUID || rpc.match(/\/([0-9a-f-]{36})$/i)?.[1] || '';
-        const explorerBase = tenderlyId
-            ? `https://dashboard.tenderly.co/aegis/project/testnet/${tenderlyId}/tx`
-            : 'https://dashboard.tenderly.co/tx/base';
+        const explorerBase = 'https://sepolia.basescan.org/tx';
 
-        const publicClient = createPublicClient({ chain: aegisTenderly, transport: http(rpc) });
+        const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpc) });
 
-        // Fetch all events from genesis of this VNet
+        // Fetch recent events from Base Sepolia
         const fromBlock = BigInt(0);
 
         const [auditLogs, clearedLogs, deniedLogs, swapLogs] = await Promise.all([
