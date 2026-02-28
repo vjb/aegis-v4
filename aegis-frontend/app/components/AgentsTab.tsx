@@ -67,6 +67,10 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
     // Trade modal state
     const [tradeModal, setTradeModal] = useState<TradeModal>(null);
 
+    // Filter and dismiss state
+    const [filter, setFilter] = useState<'all' | 'active' | 'revoked'>('all');
+    const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
     const load = useCallback(async () => {
         setLoading(true); setError(null);
         try {
@@ -238,6 +242,29 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                 </div>
             </div>
 
+            {/* Filter tabs */}
+            <div className="flex gap-1" style={{ marginBottom: 16 }}>
+                {(['all', 'active', 'revoked'] as const).map(f => {
+                    const count = f === 'all' ? agents.length : agents.filter(a => f === 'active' ? a.active : !a.active).length;
+                    return (
+                        <button key={f} onClick={() => setFilter(f)}
+                            className="mono" style={{
+                                fontSize: 11, padding: '5px 14px', borderRadius: 6, border: '1px solid',
+                                borderColor: filter === f ? 'var(--cyan)' : 'var(--border)',
+                                background: filter === f ? 'rgba(56,189,248,0.08)' : 'transparent',
+                                color: filter === f ? 'var(--cyan)' : 'var(--text-muted)',
+                                cursor: 'pointer', textTransform: 'capitalize',
+                            }}>{f} ({count})</button>
+                    );
+                })}
+                {dismissed.size > 0 && (
+                    <button onClick={() => setDismissed(new Set())} className="mono" style={{
+                        fontSize: 11, padding: '5px 14px', borderRadius: 6, border: '1px solid var(--border)',
+                        background: 'transparent', color: 'var(--text-subtle)', cursor: 'pointer', marginLeft: 'auto',
+                    }}>Show dismissed ({dismissed.size})</button>
+                )}
+            </div>
+
             {/* Error */}
             {error && (
                 <div className="card" style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'var(--red-dim)', padding: '14px 18px' }}>
@@ -355,94 +382,101 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
 
             {/* Agent cards */}
             <div className="space-y-10">
-                {agents.map(agent => {
-                    const budgetEth = parseFloat(agent.allowanceEth);
-                    const name = agentName(agent.address);
+                {agents
+                    .filter(a => !dismissed.has(a.address))
+                    .filter(a => filter === 'all' ? true : filter === 'active' ? a.active : !a.active)
+                    .map(agent => {
+                        const budgetEth = parseFloat(agent.allowanceEth);
+                        const name = agentName(agent.address);
 
-                    return (
-                        <div key={agent.address} className="card slide-in"
-                            style={{ padding: '22px 24px', marginBottom: '24px', borderColor: agent.active ? undefined : 'rgba(248,113,113,0.18)' }}>
+                        return (
+                            <div key={agent.address} className="card slide-in"
+                                style={{ padding: '22px 24px', marginBottom: '24px', borderColor: agent.active ? undefined : 'rgba(248,113,113,0.18)' }}>
 
-                            <div className="flex items-start justify-between mb-5">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center"
-                                        style={{ background: agent.active ? 'rgba(56,189,248,0.1)' : 'var(--red-dim)' }}>
-                                        <Bot className="w-5 h-5" style={{ color: agent.active ? 'var(--cyan)' : 'var(--red)' }} />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="mono font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{name}</span>
-                                            <span className={`badge ${agent.active ? 'badge-green' : 'badge-red'}`}>
-                                                {agent.active ? 'Active' : 'Revoked'}
-                                            </span>
+                                <div className="flex items-start justify-between mb-5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                            style={{ background: agent.active ? 'rgba(56,189,248,0.1)' : 'var(--red-dim)' }}>
+                                            <Bot className="w-5 h-5" style={{ color: agent.active ? 'var(--cyan)' : 'var(--red)' }} />
                                         </div>
-                                        <p className="mono text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                                            {agent.address.slice(0, 14)}…{agent.address.slice(-6)}
+                                        <div>
+                                            <div className="flex items-center gap-2.5">
+                                                <span className="mono font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{name}</span>
+                                                <span className={`badge ${agent.active ? 'badge-green' : 'badge-red'}`}>
+                                                    {agent.active ? 'Active' : 'Revoked'}
+                                                </span>
+                                            </div>
+                                            <p className="mono text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                                                {agent.address.slice(0, 14)}…{agent.address.slice(-6)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {agent.active ? (
+                                        <button onClick={() => revoke(agent.address)} className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 12 }}>
+                                            <Trash2 className="w-3.5 h-3.5" /> Revoke
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => setDismissed(d => new Set(d).add(agent.address))} className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 11 }} title="Dismiss from list">
+                                            <X className="w-3.5 h-3.5" /> Dismiss
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Budget */}
+                                <div className="mb-3">
+                                    <div className="flex justify-between mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+                                        <span>Remaining allowance</span>
+                                        <span style={{ color: budgetEth < 0.001 ? 'var(--red)' : 'var(--cyan)', fontWeight: 600 }}>
+                                            {agent.allowanceEth} ETH
+                                            {agent.allowance === '0' && <span className="ml-2" style={{ color: 'var(--red)' }}>(exhausted)</span>}
+                                        </span>
+                                    </div>
+                                    {budgetEth < 0.001 && agent.active && (
+                                        <p className="mono text-xs flex items-center gap-1.5" style={{ color: 'var(--amber)' }}>
+                                            <AlertTriangle className="w-3.5 h-3.5" /> Budget exhausted — re-subscribe to top up
                                         </p>
+                                    )}
+                                </div>
+
+                                {/* ERC-7715 Session Key Details */}
+                                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginBottom: 8 }}>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        <Key className="w-3 h-3" style={{ color: agent.active ? 'var(--amber)' : 'var(--text-subtle)' }} />
+                                        <span className="mono" style={{ fontSize: 10, color: agent.active ? 'var(--amber)' : 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                            Session Key {agent.active ? 'Active' : 'Revoked'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {SESSION_KEY_SCOPE.selectors.map(s => (
+                                            <span key={s.name} className="mono" style={{
+                                                fontSize: 10,
+                                                padding: '2px 8px',
+                                                borderRadius: 4,
+                                                background: agent.active ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                                                border: `1px solid ${agent.active ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.15)'}`,
+                                                color: agent.active ? 'var(--green)' : 'var(--red)',
+                                            }}>{s.name}() → {s.selector.slice(0, 6)}</span>
+                                        ))}
+                                        <span className="mono" style={{
+                                            fontSize: 10, padding: '2px 8px', borderRadius: 4,
+                                            background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.12)', color: 'var(--text-subtle)',
+                                        }}>Target: AegisModule</span>
                                     </div>
                                 </div>
-                                {agent.active && (
-                                    <button onClick={() => revoke(agent.address)} className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 12 }}>
-                                        <Trash2 className="w-3.5 h-3.5" /> Revoke
-                                    </button>
-                                )}
-                            </div>
 
-                            {/* Budget */}
-                            <div className="mb-3">
-                                <div className="flex justify-between mono text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
-                                    <span>Remaining allowance</span>
-                                    <span style={{ color: budgetEth < 0.001 ? 'var(--red)' : 'var(--cyan)', fontWeight: 600 }}>
-                                        {agent.allowanceEth} ETH
-                                        {agent.allowance === '0' && <span className="ml-2" style={{ color: 'var(--red)' }}>(exhausted)</span>}
-                                    </span>
-                                </div>
-                                {budgetEth < 0.001 && agent.active && (
-                                    <p className="mono text-xs flex items-center gap-1.5" style={{ color: 'var(--amber)' }}>
-                                        <AlertTriangle className="w-3.5 h-3.5" /> Budget exhausted — re-subscribe to top up
-                                    </p>
-                                )}
+                                {/* Simulate Trade button — always present, disabled when revoked */}
+                                <button
+                                    onClick={() => agent.active && !isKilled && openTradeModal(agent)}
+                                    disabled={!agent.active || isKilled}
+                                    className="btn btn-ghost"
+                                    style={{ width: '100%', justifyContent: 'center', fontSize: 12, borderTop: '1px solid var(--border)', marginTop: 0, borderRadius: '0 0 10px 10px', padding: '12px 16px' }}
+                                >
+                                    <TrendingUp className="w-3.5 h-3.5" />
+                                    {agent.active ? 'Simulate Trade → Oracle Feed' : 'Agent Revoked'}
+                                </button>
                             </div>
-
-                            {/* ERC-7715 Session Key Details */}
-                            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginBottom: 8 }}>
-                                <div className="flex items-center gap-1.5 mb-2">
-                                    <Key className="w-3 h-3" style={{ color: agent.active ? 'var(--amber)' : 'var(--text-subtle)' }} />
-                                    <span className="mono" style={{ fontSize: 10, color: agent.active ? 'var(--amber)' : 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                        Session Key {agent.active ? 'Active' : 'Revoked'}
-                                    </span>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {SESSION_KEY_SCOPE.selectors.map(s => (
-                                        <span key={s.name} className="mono" style={{
-                                            fontSize: 10,
-                                            padding: '2px 8px',
-                                            borderRadius: 4,
-                                            background: agent.active ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
-                                            border: `1px solid ${agent.active ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.15)'}`,
-                                            color: agent.active ? 'var(--green)' : 'var(--red)',
-                                        }}>{s.name}() → {s.selector.slice(0, 6)}</span>
-                                    ))}
-                                    <span className="mono" style={{
-                                        fontSize: 10, padding: '2px 8px', borderRadius: 4,
-                                        background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.12)', color: 'var(--text-subtle)',
-                                    }}>Target: AegisModule</span>
-                                </div>
-                            </div>
-
-                            {/* Simulate Trade button — always present, disabled when revoked */}
-                            <button
-                                onClick={() => agent.active && !isKilled && openTradeModal(agent)}
-                                disabled={!agent.active || isKilled}
-                                className="btn btn-ghost"
-                                style={{ width: '100%', justifyContent: 'center', fontSize: 12, borderTop: '1px solid var(--border)', marginTop: 0, borderRadius: '0 0 10px 10px', padding: '12px 16px' }}
-                            >
-                                <TrendingUp className="w-3.5 h-3.5" />
-                                {agent.active ? 'Simulate Trade → Oracle Feed' : 'Agent Revoked'}
-                            </button>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
             </div>
         </div>
     );
