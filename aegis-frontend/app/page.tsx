@@ -77,6 +77,7 @@ export default function Home() {
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [walletLoading, setWalletLoading] = useState(true);
   const [lastAuditResult, setLastAuditResult] = useState<{ token: string; status: string; score: number } | null>(null);
+  const [dockerUp, setDockerUp] = useState<boolean | null>(null);
 
   // Panel widths in px percentages (sum = 100)
   const [leftPct, setLeftPct] = useState(40);
@@ -113,6 +114,20 @@ export default function Home() {
   };
 
   useEffect(() => { loadWallet(); }, []);
+
+  // Poll Docker status every 10s
+  useEffect(() => {
+    const checkDocker = async () => {
+      try {
+        const res = await fetch('/api/docker-status');
+        const data = await res.json();
+        setDockerUp(data.running);
+      } catch { setDockerUp(false); }
+    };
+    checkDocker();
+    const id = setInterval(checkDocker, 10000);
+    return () => clearInterval(id);
+  }, []);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'agents', label: 'Agents', icon: Bot },
@@ -151,8 +166,10 @@ export default function Home() {
         {/* Center — network + oracle status */}
         <div className="flex items-center gap-5 mono text-xs" style={{ color: 'var(--text-muted)' }}>
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full pulse-slow" style={{ background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
-            <span style={{ color: 'var(--green)' }}>Oracle Online</span>
+            <span className="w-2 h-2 rounded-full pulse-slow" style={{ background: dockerUp ? 'var(--green)' : dockerUp === false ? 'var(--red)' : 'var(--amber)', boxShadow: `0 0 6px ${dockerUp ? 'var(--green)' : dockerUp === false ? 'var(--red)' : 'var(--amber)'}` }} />
+            <span style={{ color: dockerUp ? 'var(--green)' : dockerUp === false ? 'var(--red)' : 'var(--amber)' }}>
+              {dockerUp ? 'CRE Online' : dockerUp === false ? 'CRE Offline' : 'Checking…'}
+            </span>
           </span>
           <span style={{ color: 'var(--border-bright)' }}>·</span>
           <span className="flex items-center gap-1.5">
