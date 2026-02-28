@@ -6,13 +6,23 @@
 
 **Convergence Hackathon Tracks:** Risk & Compliance · CRE & AI · DeFi & Tokenization · Privacy · Autonomous Agents
 
-[![Forge Tests](https://img.shields.io/badge/forge%20tests-18%20passing-brightgreen)](test/AegisModule.t.sol)
+[![Forge Tests](https://img.shields.io/badge/forge%20tests-21%20passing-brightgreen)](test/AegisModule.t.sol)
 [![Jest Tests](https://img.shields.io/badge/jest%20tests-83%20passing-brightgreen)](test/)
 [![CRE Live](https://img.shields.io/badge/chainlink%20CRE-live%20on%20Base%20Sepolia-blue)](cre-node/)
 [![ERC-7579](https://img.shields.io/badge/ERC--7579-executor-orange)](src/AegisModule.sol)
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Pimlico%20bundler-purple)](scripts/v5_e2e_mock.ts)
 
 🎬 **[Watch the Demo Video](#)** · 📖 **[Architecture (12 Mermaid Diagrams)](docs/ARCHITECTURE.md)** · 🔐 **[Confidential HTTP Deep-Dive](docs/CONFIDENTIAL_HTTP.md)** · 🏗️ **[ERC Standards (4337 + 7579 + 7715)](docs/ERC_STANDARDS.md)**
+
+### Verified on Base Sepolia (Chain ID 84532)
+
+| Contract | Address | Status |
+|---|---|---|
+| **AegisModule** (ERC-7579 Executor) | [`0x23EfaEF29EcC0e6CE313F0eEd3d5dA7E0f5Bcd89`](https://sepolia.basescan.org/address/0x23efaef29ecc0e6ce313f0eed3d5da7e0f5bcd89#code) | ✅ Verified on BaseScan |
+| MockBRETT | [`0x46d40e0abda0814bb0cb323b2bb85a129d00b0ac`](https://sepolia.basescan.org/address/0x46d40e0abda0814bb0cb323b2bb85a129d00b0ac) | Deployed |
+| MockHoneypot | [`0xf672c8fc888b98db5c9662d26e657417a3c453b5`](https://sepolia.basescan.org/address/0xf672c8fc888b98db5c9662d26e657417a3c453b5) | Deployed |
+
+> **Owner:** `0x109D8072B1762263ed094BC05c5110895Adc65Cf` · Full source code readable on BaseScan
 
 ---
 
@@ -77,7 +87,7 @@ The fundamental security philosophy of Aegis is the strict separation of **Execu
 ### 1. The Capital Allocator (The Human Owner)
 - **Identity:** A standard Web3 wallet (MetaMask, hardware wallet).
 - **Role:** Absolute sovereign control. The Owner never delegates their private keys.
-- **Function:** Deposits capital into the Safe Smart Account, installs the AegisModule, and issues scoped session keys. Only the owner can call `subscribeAgent`, `revokeAgent`, and `killSwitch`.
+- **Function:** Deposits capital into the Safe Smart Account, installs the AegisModule, and issues scoped session keys. Only the owner can call `subscribeAgent`, `revokeAgent`, and `setFirewallConfig`.
 
 ### 2. The Safe Smart Account (ERC-7579)
 - **Identity:** An ERC-4337 Smart Account with the AegisModule installed as an Executor.
