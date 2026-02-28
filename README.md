@@ -22,7 +22,7 @@ AI trading bots are becoming mainstream. The problem? To use one today, you have
 
 **Enter Aegis Protocol: A Zero-Trust Smart Treasury for AI.** Aegis is the security layer between your money and your AI agent. It completely separates the brain (the AI bot) from the bank (your money).
 
-Think of it like issuing a corporate credit card to a new employee. The CEO (you) holds the master bank account, and the employee (the AI Agent) gets a card with a strict $500 limit. If the employee tries to buy a yacht, the transaction is instantly declined. Aegis takes this a step further by routing every transaction through an automated, decentralized AI compliance department before a single cent leaves the vault.
+Think of it like issuing a corporate credit card to a new employee. The CEO (you) holds the primary bank account, and the employee (the AI Agent) gets a card with a strict $500 limit. If the employee tries to buy a yacht, the transaction is instantly declined. Aegis takes this a step further by routing every transaction through an automated, decentralized AI compliance department before a single cent leaves the vault.
 
 ### How it works:
 
@@ -207,7 +207,7 @@ if (logicBomb)                         riskMatrix |= 128; // Bit 7
 - Rebuilds Chainlink CRE Docker container
 - Compiles TypeScript oracle to WASM via Javy
 
-### [`demo_v5_master.ps1`](scripts/demo_v5_master.ps1) — The God Mode Demo (~5 min) · [sample output](docs/sample_output/demo_v5_master_run.txt)
+### [`demo_v5_master.ps1`](scripts/demo_v5_master.ps1) — End-to-End Showcase (~5 min) · [sample output](docs/sample_output/demo_v5_master_run.txt)
 
 | Act | Title | What Happens |
 |---|---|---|

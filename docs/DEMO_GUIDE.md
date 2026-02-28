@@ -67,7 +67,7 @@ The decentralized bedrock is live. Base Sepolia is reachable, the dev wallet is 
 
 ---
 
-## Demo 2 — The God Mode Demo ([`demo_v5_master.ps1`](../scripts/demo_v5_master.ps1)) · [sample output](sample_output/demo_v5_master_run.txt)
+## Demo 2 — End-to-End Showcase ([`demo_v5_master.ps1`](../scripts/demo_v5_master.ps1)) · [sample output](sample_output/demo_v5_master_run.txt)
 
 **Time:** ~5 minutes
 **Tracks:** CRE & AI · Privacy · DeFi & Tokenization · Autonomous Agents

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Aegis Protocol V5 - Chainlink CRE Exclusive Showcase (The "God Mode" Oracle Demo)
+Aegis Protocol V5 - Chainlink CRE Exclusive Showcase (Confidential AI Consensus Demo)
 
 .DESCRIPTION
 Strictly engineered for Chainlink Hackathon judges. Bypasses the frontend and

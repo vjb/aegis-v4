@@ -30,7 +30,7 @@ All three demo scripts (`setup`, `master`, `cre`) feature:
 - **Summary checklists** — phase completion boxes at the end of each script
 - **Success/Info helpers** — consistent formatting across all scripts
 
-The master demo now runs 7 acts: Treasury → Subscribe Agents → Audit Intents → CRE AI → Swap/Revert → Budget Verification → Kill Switch
+The main demo now runs 7 acts: Treasury → Subscribe Agents → Audit Intents → CRE AI → Swap/Revert → Budget Verification → Kill Switch
 
 ## Quick Engineering Notes
 
