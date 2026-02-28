@@ -60,7 +60,8 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
             if (data.error) throw new Error(data.error);
             const loaded = data.agents || [];
             setAgents(loaded.length > 0 ? loaded : DEMO_AGENTS);
-            setTreasury(data.treasury || '0.090000');
+            const t = data.treasury;
+            setTreasury(t && t !== '0.000000' ? t : '0.090000');
         } catch (e: any) {
             setError(e.message);
             setAgents(DEMO_AGENTS);

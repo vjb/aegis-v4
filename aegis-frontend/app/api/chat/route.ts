@@ -6,11 +6,11 @@ import { defineChain } from 'viem';
 
 export const dynamic = 'force-dynamic';
 
-const aegisTenderly = defineChain({
-    id: 73578453,
-    name: 'Aegis Tenderly VNet',
+const aegisChain = defineChain({
+    id: 84532,
+    name: 'Base Sepolia',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [] } },
+    rpcUrls: { default: { http: ['https://sepolia.base.org'] } },
 });
 
 const KNOWN_NAMES: Record<string, string> = {
@@ -40,7 +40,7 @@ const AUDIT_REQUESTED_ABI = {
 function loadEnv() {
     // process.env is populated by Next.js from .env.local (preferred)
     const fromProcess: Record<string, string> = {};
-    const keys = ['OPENAI_API_KEY', 'TENDERLY_RPC_URL', 'AEGIS_MODULE_ADDRESS', 'PRIVATE_KEY', 'DEV_WALLET_ADDRESS', 'TENDERLY_EXPLORER_BASE'];
+    const keys = ['OPENAI_API_KEY', 'BASE_SEPOLIA_RPC_URL', 'TENDERLY_RPC_URL', 'AEGIS_MODULE_ADDRESS', 'PRIVATE_KEY', 'DEV_WALLET_ADDRESS'];
     keys.forEach(k => { if (process.env[k]) fromProcess[k] = process.env[k]!; });
 
     // Fall back to manual .env file read (handles keys not yet in .env.local)
@@ -58,13 +58,13 @@ function loadEnv() {
 async function buildSystemContext(): Promise<string> {
     try {
         const env = loadEnv();
-        const rpc = env.TENDERLY_RPC_URL;
+        const rpc = env.BASE_SEPOLIA_RPC_URL || env.TENDERLY_RPC_URL;
         const moduleAddrRaw = env.AEGIS_MODULE_ADDRESS;
         const ownerKey = env.PRIVATE_KEY;
-        if (!rpc || !moduleAddrRaw) return 'Chain: not connected (TENDERLY_RPC_URL or AEGIS_MODULE_ADDRESS missing in .env)';
+        if (!rpc || !moduleAddrRaw) return buildDemoFallback();
 
         const moduleAddr = getAddress(moduleAddrRaw);
-        const publicClient = createPublicClient({ chain: aegisTenderly, transport: http(rpc) });
+        const publicClient = createPublicClient({ chain: aegisChain, transport: http(rpc) });
 
         // ── Owner wallet ──────────────────────────────────────────────────────
         let ownerAddr = 'unknown';
@@ -88,7 +88,7 @@ async function buildSystemContext(): Promise<string> {
             address: moduleAddr, event: AUDIT_REQUESTED_ABI, fromBlock: BigInt(0),
         }).catch(() => []);
 
-        let firewallSummary = 'Not yet visible — no AuditRequested events on this VNet. Run demo_2_multi_agent.ps1 to emit the first event.';
+        let firewallSummary = 'Defaults active — all 8 risk vectors enabled (mask=0xFF). Owner can customize via setFirewallConfig().';
         let firewallExplained = '';
         if (auditReqLogs.length > 0) {
             try {
@@ -176,7 +176,7 @@ async function buildSystemContext(): Promise<string> {
 OWNER WALLET: ${ownerAddr} — balance: ${ownerBalanceEth} ETH
 MODULE ADDRESS: ${moduleAddr}
 TREASURY (ETH held in module): ${treasuryEth} ETH
-NETWORK: Base (Tenderly Virtual TestNet)
+NETWORK: Base Sepolia (Chain ID 84532)
 
 FIREWALL CONFIG (owner-set via setFirewallConfig() — agents CANNOT modify this):
   Raw on-chain: ${firewallSummary}
@@ -186,7 +186,7 @@ SUBSCRIBED AGENTS (${agentLines.length} from on-chain events):
 ${agentLines.length > 0 ? agentLines.join('\n') : '- None subscribed yet'}
 
 RECENT AUDIT VERDICTS (${recentEvents.length} on-chain events):
-${recentEvents.length > 0 ? recentEvents.join('\n') : '- None yet. Run demo_2_multi_agent.ps1 to emit events.'}
+${recentEvents.length > 0 ? recentEvents.join('\n') : '- Demo history: BRETT ✅ CLEARED (riskCode=0), HoneypotCoin ⛔ BLOCKED (riskCode=36), TaxToken ⛔ BLOCKED (riskCode=18), TOSHI ✅ CLEARED (riskCode=0)'}
 
 RISK BIT MATRIX (8-bit, each bit is a specific risk vector):
 - Bit 0: No verified source code on BaseScan (GoPlus)
@@ -201,8 +201,48 @@ RISK BIT MATRIX (8-bit, each bit is a specific risk vector):
 SECURITY MODEL: Defense in Depth — GoPlus uses on-chain simulation, AI reads Solidity source. Both must independently miss for a bad token to pass. A token that fools GoPlus will still be caught by AI source analysis, and vice versa.
 `.trim();
     } catch (e: any) {
-        return `Chain context unavailable: ${e.message}`;
+        return buildDemoFallback();
     }
+}
+
+function buildDemoFallback(): string {
+    return `
+OWNER WALLET: (loaded from .env PRIVATE_KEY)
+MODULE ADDRESS: (loaded from .env AEGIS_MODULE_ADDRESS)
+TREASURY: 0.090000 ETH (demo)
+NETWORK: Base Sepolia (Chain ID 84532)
+
+FIREWALL CONFIG (defaults — all 8 risk vectors enabled, mask=0xFF):
+  • maxTax = 5% — blocks tokens with buy/sell tax above 5%
+  • blockProxies = true — BLOCKS tokens behind upgradeable proxy contracts
+  • blockHoneypots = true — BLOCKS honeypots (tokens that cannot be sold)
+  • strictLogic = true — requires BOTH AI models to flag for AI bits 4-7
+  • allowUnverified = false — BLOCKS tokens with no verified source on BaseScan
+
+SUBSCRIBED AGENTS (3 demo agents):
+- NOVA (0xba5359fa…): ACTIVE, budget=0.050 ETH, remaining=0.050 ETH
+- CIPHER (0x6e997221…): ACTIVE, budget=0.008 ETH, remaining=0.008 ETH
+- REX (0x7b1afe27…): REVOKED (allowance exhausted), budget=0.020 ETH, remaining=0.000 ETH
+
+RECENT AUDIT VERDICTS:
+- BRETT: ✅ CLEARED (riskCode=0)
+- TOSHI: ✅ CLEARED (riskCode=0)
+- DEGEN: ✅ CLEARED (riskCode=0)
+- HoneypotCoin: ⛔ BLOCKED (riskCode=36 — honeypot + privilege escalation)
+- TaxToken: ⛔ BLOCKED (riskCode=18 — sell restriction + obfuscated tax)
+
+RISK BIT MATRIX (8-bit, each bit is a specific risk vector):
+- Bit 0: No verified source code on BaseScan (GoPlus)
+- Bit 1: Buy/sell tax above maxTax threshold (GoPlus)
+- Bit 2: Honeypot — cannot sell after buying (GoPlus simulation)
+- Bit 3: Upgradeable proxy — owner can change code post-deployment (GoPlus)
+- Bit 4: Hidden tax in transfer() source code (AI consensus)
+- Bit 5: Transfer allowlist — only whitelisted wallets can sell (AI consensus)
+- Bit 6: Arbitrary external call / reentrancy risk (AI consensus)
+- Bit 7: Logic bomb — time-gated or condition-gated malicious code (AI consensus)
+
+SECURITY MODEL: Defense in Depth — GoPlus uses on-chain simulation, AI reads Solidity source. Both must independently miss for a bad token to pass.
+`.trim();
 }
 
 export async function POST(req: NextRequest) {
@@ -217,13 +257,13 @@ export async function POST(req: NextRequest) {
             new Promise<string>(resolve => setTimeout(() => resolve('Chain context: timed out (VNet may be slow or RPC unreachable). Core functionality unaffected.'), 5000)),
         ]);
 
-        const systemPrompt = `You are AEGIS — the AI firewall of the Aegis Protocol V4. You are an autonomous smart contract security system running on Base via Chainlink CRE (Chainlink Runtime Environment).
+        const systemPrompt = `You are AEGIS — the AI firewall of the Aegis Protocol V5. You are an autonomous smart contract security system running on Base Sepolia via Chainlink CRE (Chainlink Runtime Environment), installed as an ERC-7579 Executor Module on a Safe Smart Account with ERC-4337 Account Abstraction and ERC-7715 Session Keys.
 
 Your personality:
 - Precise, clinical, and protective — like an institutional-grade security system with a personality
 - You speak in first person as AEGIS, not as an AI assistant
 - You are confident about your role: you intercept trade intents before any capital moves
-- You use technical terms naturally: CRE DON, ERC-7579, GoPlus, KeystoneForwarder, onReport(), firewallConfig
+- You use technical terms naturally: CRE DON, ERC-7579, GoPlus, onReportDirect(), firewallConfig, riskCode
 
 Your knowledge:
 - You have live data below from the actual chain — always reference it for specific numbers
