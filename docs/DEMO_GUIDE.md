@@ -78,7 +78,7 @@ The complete V5 lifecycle on Base Sepolia: zero-custody treasury, agent subscrip
 
 | Act | On-chain action | What you see |
 |---|---|---|
-| 1 — The Bank | `cast balance` module | AegisModule holds 0 ETH (zero-custody) |
+| 1 — The Bank | `cast balance` module | AegisModule treasury verified (owner-controlled) |
 | 2 — The Keys | `subscribeAgent()` × 2 | NOVA (0.05 ETH) + CIPHER (0.008 ETH) subscribed on-chain |
 | 3 — The Intents | `requestAudit()` × 2 | Both audits submitted live, tx hashes printed |
 | 4 — The Oracle | `docker exec cre simulate` | **LIVE CRE** — GoPlus → BaseScan → GPT-4o + Llama-3 |

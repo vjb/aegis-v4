@@ -76,7 +76,7 @@ The critical design principle: **the module has execution rights but never holds
 | `requestAudit` → `AuditRequested` event | ✅ Live | Emits on Base Sepolia, CRE DON intercepts the event |
 | `onReport` callback from KeystoneForwarder | ✅ Live | Guarded by `keystoneForwarder` address check |
 | `triggerSwap` with budget deduction | ✅ Live | CEI pattern, budget math enforced on-chain |
-| 18 Forge tests passing | ✅ Verified | [`forge_tests.txt`](sample_output/forge_tests.txt) |
+| 21 Forge tests passing | ✅ Verified | [`forge_tests.txt`](sample_output/forge_tests.txt) |
 
 ### What Is Simulated
 
@@ -88,7 +88,7 @@ The critical design principle: **the module has execution rights but never holds
 ### Key Files
 
 - [`src/AegisModule.sol`](../src/AegisModule.sol) — The ERC-7579 Executor Module (350 lines)
-- [`test/AegisModule.t.sol`](../test/AegisModule.t.sol) — 18 Forge tests covering all functions
+- [`test/AegisModule.t.sol`](../test/AegisModule.t.sol) — 18 AegisModule tests + 3 template tests (21 total)
 - [`forge_tests.txt`](sample_output/forge_tests.txt) — Test output
 
 ---
@@ -162,7 +162,7 @@ The session key layer adds **function-level selector gating** on top of this bud
 | Layer | Standard | On-Chain? | What's Real | What's Simulated |
 |---|---|---|---|---|
 | **Wallet** | ERC-4337 | ✅ | Safe Smart Account + Pimlico Bundler | Demo scripts use `cast send` instead of UserOps |
-| **Plugin** | ERC-7579 | ✅ | AegisModule installed as Executor, 18 tests | Swap is mock (no DEX liquidity on testnet) |
+| **Plugin** | ERC-7579 | ✅ | AegisModule installed as Executor, 21 tests | Swap is mock (no DEX liquidity on testnet) |
 | **Permissions** | ERC-7715 | ⚠️ Partial | Session config built, budget enforced on-chain | SmartSessionValidator not yet installed on Safe |
 
 > **Bottom line:** The smart contract security layer (budgets, revocation, firewall enforcement) is **fully live on Base Sepolia**. The session key scoping (ERC-7715) is architecturally complete and unit-tested, but the SmartSessionValidator module has not yet been installed on the live Safe — the equivalent security is provided by the `agentAllowances` mapping in `AegisModule.sol`.

@@ -14,7 +14,6 @@ During development, we evaluated three bundler strategies. This document records
 
 Alto bundler requires `debug_traceCall` with a custom JavaScript tracer to enforce ERC-4337's off-chain simulation rules (opcode banning, storage access restrictions). Tenderly VNets do not expose `debug_traceCall`, returning `"not supported"`. This makes Alto fundamentally incompatible with Tenderly as a backing node.
 
-See [ALTO_BUNDLER_DEBUG_LOG.md](./ALTO_BUNDLER_DEBUG_LOG.md) for the full debugging trace.
 
 ---
 

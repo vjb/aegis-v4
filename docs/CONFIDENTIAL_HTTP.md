@@ -94,7 +94,7 @@ The log output of a successful oracle run explicitly confirms the confidential c
 
 These log lines are emitted by `nodeRuntime.log()` from inside the WASM sandbox — they appear in the CRE simulation output and confirm the secure channel is active.
 
-See: [`sample_output/demo_v5_master_run1.txt`](sample_output/demo_v5_master_run1.txt) for a full run with all five API calls confirmed.
+See: [`sample_output/demo_v5_master_run.txt`](sample_output/demo_v5_master_run.txt) for a full run with all five API calls confirmed.
 
 ---
 
