@@ -167,7 +167,6 @@ contract TaxToken is ERC20, Ownable {
 // ─── AuditResult Type ─────────────────────────────────────────────────────────
 type AuditResult = {
     targetAddress: string;
-    goPlusStatus: string;
     unverifiedCode: number;
     sellRestriction: number;
     honeypot: number;
@@ -327,7 +326,7 @@ const performStaticAnalysis = (
     }
 
     return {
-        targetAddress, goPlusStatus: "",
+        targetAddress,
         unverifiedCode, sellRestriction, honeypot, proxyContract,
         obfuscatedTax: 0, privilegeEscalation: 0, externalCallRisk: 0, logicBomb: 0
     };
@@ -553,7 +552,6 @@ const onAuditTrigger = (runtime: Runtime<Config>, log: EVMLog): string => {
         performStaticAnalysis,
         ConsensusAggregationByFields<AuditResult>({
             targetAddress: identical,
-            goPlusStatus: ignore,
             unverifiedCode: median,
             sellRestriction: median,
             honeypot: median,
