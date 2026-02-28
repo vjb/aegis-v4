@@ -101,3 +101,56 @@ describe("V4 vs V5 call structure", () => {
         expect(call.data.length).toBe(2 + 8 + 64 * 3); // "0x" + selector + 3 params
     });
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Phase 5.5.2 — ERC-7715 Session Key Constraints
+// ═══════════════════════════════════════════════════════════════════════
+import {
+    buildAgentSession,
+    SMART_SESSIONS_VALIDATOR_ADDRESS,
+} from "../scripts/v5_session_config";
+import { toFunctionSelector, encodeFunctionData, type Hex } from "viem";
+
+const MOCK_AGENT: Address = "0x1234567890AbCdEf1234567890AbCdEf12345678";
+
+describe("ERC-7715 Session Key Constraints (5.5.2)", () => {
+    const session = buildAgentSession(MOCK_AGENT, MOCK_MODULE, BigInt(1e18));
+
+    it("session key targets ONLY the AegisModule address", () => {
+        for (const action of session.actions) {
+            expect(action.actionTarget.toLowerCase()).toBe(MOCK_MODULE.toLowerCase());
+        }
+    });
+
+    it("session permits exactly 2 selectors: requestAudit + triggerSwap", () => {
+        expect(session.actions).toHaveLength(2);
+        const selectors = session.actions.map((a) => a.actionTargetSelector);
+        expect(selectors).toContain(SELECTOR_REQUEST_AUDIT);
+        expect(selectors).toContain(SELECTOR_TRIGGER_SWAP);
+    });
+
+    it("session DOES NOT permit arbitrary function selectors (e.g. ETH drain)", () => {
+        const DRAIN_SELECTOR = toFunctionSelector("transfer(address,uint256)") as Hex;
+        const selectors = session.actions.map((a) => a.actionTargetSelector);
+        expect(selectors).not.toContain(DRAIN_SELECTOR);
+    });
+
+    it("session DOES NOT permit calling a random contract (only AegisModule)", () => {
+        const RANDOM_CONTRACT: Address = "0xDeAdDeAdDeAdDeAdDeAdDeAdDeAdDeAdDeAdDeAd";
+        for (const action of session.actions) {
+            expect(action.actionTarget.toLowerCase()).not.toBe(RANDOM_CONTRACT.toLowerCase());
+        }
+    });
+
+    it("session uses the SmartSessionsValidator (Rhinestone canonical)", () => {
+        expect(session.sessionValidator.toLowerCase()).toBe(
+            SMART_SESSIONS_VALIDATOR_ADDRESS.toLowerCase()
+        );
+    });
+
+    it("session key = agent public address (embedded in initData)", () => {
+        expect(session.sessionValidatorInitData.toLowerCase()).toContain(
+            MOCK_AGENT.toLowerCase().replace("0x", "")
+        );
+    });
+});

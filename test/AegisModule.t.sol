@@ -129,17 +129,15 @@ contract AegisModuleTest is Test {
         module.onReportDirect(0, 0);
         assertTrue(module.isApproved(token), "Should be approved before swap");
 
-        // In unit test mode (no Base fork), Uniswap call reverts → entire tx rolls back
-        // including the isApproved reset — this is correct EVM behavior.
-        // triggerSwap reverts since there is no real Uniswap here.
-        // Note: AllSwapsFailed selector is lost through try/catch, so match any revert.
-        vm.expectRevert();
+        // Swap should SUCCEED with mock swap (no more real Uniswap)
+        // Expect SwapExecuted event with mock 1:1000 ratio
+        vm.expectEmit(true, false, false, true);
+        emit AegisModule.SwapExecuted(token, 0.01 ether, 0.01 ether * 1000);
+
         module.triggerSwap(token, 0.01 ether, 1);
 
-        // EVM rolled back: clearance is still true after the revert.
-        // On a REAL Base fork, the swap would succeed and isApproved would be set to false.
-        // The true anti-replay test runs in scripts/e2e_mock_simulation.ts.
-        assertTrue(module.isApproved(token), "State rolled back - clearance still set after revert");
+        // Clearance consumed (anti-replay CEI pattern proven)
+        assertFalse(module.isApproved(token), "Clearance must be consumed after swap");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -221,4 +219,62 @@ contract AegisModuleTest is Test {
         vm.expectRevert(AegisModule.InsufficientBudget.selector);
         module.triggerSwap(token, 0.01 ether, 1);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TEST 13: triggerSwap — mock swap emits SwapExecuted (5.5.1b)
+    // ═══════════════════════════════════════════════════════════════════════
+    function test_triggerSwap_mockEmitsEvent() public {
+        module.subscribeAgent(agent1, 1 ether);
+
+        module.requestAudit(token);
+        module.onReportDirect(0, 0);
+
+        // Agent triggers swap — mock emits event with 1:1000 ratio
+        vm.prank(agent1);
+        vm.expectEmit(true, false, false, true);
+        emit AegisModule.SwapExecuted(token, 0.02 ether, 0.02 ether * 1000);
+        module.triggerSwap(token, 0.02 ether, 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TEST 14: only owner can subscribeAgent (5.5.1c)
+    // ═══════════════════════════════════════════════════════════════════════
+    function test_subscribeAgent_onlyOwner() public {
+        vm.prank(agent1);
+        vm.expectRevert(AegisModule.NotOwner.selector);
+        module.subscribeAgent(agent2, 1 ether);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TEST 15: random address cannot triggerSwap (5.5.1c)
+    // ═══════════════════════════════════════════════════════════════════════
+    function test_triggerSwap_onlyOwnerOrAgent() public {
+        // Clear token
+        module.requestAudit(token);
+        module.onReportDirect(0, 0);
+
+        // Random address (not owner, not subscribed) tries to swap
+        // Guard: `agentAllowances[msg.sender] < _amountIn && msg.sender != owner`
+        // → InsufficientBudget (0 budget + not owner)
+        vm.prank(address(0xDEAD));
+        vm.expectRevert(AegisModule.InsufficientBudget.selector);
+        module.triggerSwap(token, 0.01 ether, 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TEST 16: agent budget deducted after swap (5.5.1b)
+    // ═══════════════════════════════════════════════════════════════════════
+    function test_triggerSwap_deductsBudget() public {
+        module.subscribeAgent(agent1, 1 ether);
+
+        module.requestAudit(token);
+        module.onReportDirect(0, 0);
+
+        vm.prank(agent1);
+        module.triggerSwap(token, 0.01 ether, 1);
+
+        // Budget should be deducted by the swap amount
+        assertEq(module.agentAllowances(agent1), 1 ether - 0.01 ether);
+    }
 }
+

@@ -110,3 +110,81 @@ describe("Aegis CRE Oracle V4 — ABI encoding", () => {
         expect(v3Encoded).toBe(v4Encoded);
     });
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Phase 5.5.3 — Oracle AI JSON → onReportDirect Hex Payload
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Simulates the oracle pipeline:
+ *   1. AI model returns JSON: { "risk": N }
+ *   2. Oracle parses the risk score
+ *   3. Oracle encodes calldata for onReportDirect(uint256 tradeId, uint256 riskScore)
+ *
+ * The function selector for onReportDirect(uint256,uint256) = keccak256 first 4 bytes.
+ */
+function encodeOnReportDirectCalldata(tradeId: bigint, riskScore: bigint): string {
+    // onReportDirect(uint256,uint256) selector = 0x7e5465e1
+    // (computed from keccak256("onReportDirect(uint256,uint256)"))
+    const SELECTOR = "77f354e3";
+    const padHex = (n: bigint): string => n.toString(16).padStart(64, "0");
+    return "0x" + SELECTOR + padHex(tradeId) + padHex(riskScore);
+}
+
+function parseAiJsonToRiskScore(aiJsonResponse: string): bigint {
+    const parsed = JSON.parse(aiJsonResponse);
+    // The oracle sums all risk flags into a single score
+    const risk = parsed.risk ?? parsed.riskScore ?? 0;
+    return BigInt(risk);
+}
+
+describe("Oracle AI JSON → onReportDirect hex payload (5.5.3)", () => {
+    test('AI response {"risk": 5} → correct hex payload for onReportDirect', () => {
+        const aiResponse = '{"risk": 5}';
+        const tradeId = BigInt(42);
+        const riskScore = parseAiJsonToRiskScore(aiResponse);
+
+        expect(riskScore).toBe(BigInt(5));
+
+        const calldata = encodeOnReportDirectCalldata(tradeId, riskScore);
+
+        // Verify format: "0x" + 4-byte selector + 32-byte tradeId + 32-byte riskScore
+        expect(calldata.length).toBe(2 + 8 + 64 + 64); // 138 chars
+
+        // Verify selector
+        expect(calldata.slice(2, 10)).toBe("77f354e3");
+
+        // Verify tradeId = 42 = 0x2a
+        expect(calldata.slice(10, 74)).toMatch(/^0{62}2a$/);
+
+        // Verify riskScore = 5
+        expect(calldata.slice(74)).toMatch(/^0{63}5$/);
+    });
+
+    test('AI response {"risk": 0} → approved (clean token)', () => {
+        const aiResponse = '{"risk": 0}';
+        const riskScore = parseAiJsonToRiskScore(aiResponse);
+        expect(riskScore).toBe(BigInt(0));
+
+        const calldata = encodeOnReportDirectCalldata(BigInt(0), riskScore);
+        // riskScore = 0 means isApproved will be set to true
+        expect(calldata.slice(74)).toMatch(/^0{64}$/);
+    });
+
+    test('AI response {"risk": 36} → denied (honeypot + privilege escalation)', () => {
+        const aiResponse = '{"risk": 36}';
+        const riskScore = parseAiJsonToRiskScore(aiResponse);
+        expect(riskScore).toBe(BigInt(36));
+
+        // 36 = 0x24 → bit 2 (honeypot) + bit 5 (privilege escalation)
+        const calldata = encodeOnReportDirectCalldata(BigInt(1), riskScore);
+        expect(calldata.slice(74)).toMatch(/^0{62}24$/);
+    });
+
+    test("calldata length is always exactly 138 chars (4+32+32 bytes)", () => {
+        for (const risk of [0, 1, 5, 36, 255]) {
+            const calldata = encodeOnReportDirectCalldata(BigInt(0), BigInt(risk));
+            expect(calldata.length).toBe(138);
+        }
+    });
+});

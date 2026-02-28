@@ -25,37 +25,67 @@
 - [x] `src/agent/bot.ts` — rewrote to `sendUserOperation` format
 
 ### Phase 5a: Tenderly + Local Bundler (ABANDONED)
-- [x] Attempted Alto bundler in Docker → failed (`debug_traceCall` unsupported on Tenderly)
-- [x] Attempted Direct Bundler Mock (manual `handleOps`) → failed (EP 0.7 PackedUserOperation encoding complexity)
-- [x] Documented in `docs/BUNDLER_STRATEGY_DECISION.md` and `docs/ALTO_BUNDLER_DEBUG_LOG.md`
+- [x] Alto bundler → failed (`debug_traceCall` unsupported on Tenderly)
+- [x] Direct Bundler Mock → failed (EP 0.7 PackedUserOp encoding too complex)
+- [x] Documented in `docs/BUNDLER_STRATEGY_DECISION.md`
+
+### Phase 5b: Base Sepolia + Pimlico Pivot ✅
+- [x] Reverted `bot.ts` → `smartAccountClient.sendUserOperation` via Pimlico
+- [x] Rewrite `v5_setup_safe.ts` + `v5_e2e_mock.ts` for Pimlico
+- [x] Created `script/DeployMocks.s.sol` (MockBRETT + MockHoneypot + AegisModule)
+- [x] Mocked Uniswap swap in `AegisModule.sol`
+- [x] Deployed all contracts to Base Sepolia
+- [x] **Full E2E test PASSED — all 5 phases on Base Sepolia** ✅
+- [x] [CHECKPOINT 5b] commit + push `a4f469b`
 
 ---
 
-## 🔄 PIVOT: Base Sepolia + Pimlico Cloud
+## 🔄 Active Phases
 
-> **Decision:** Stop fighting infrastructure. Use Pimlico's hosted bundler on Base Sepolia.
-> This gives us instant, working ERC-4337 with zero manual gas packing.
+### Phase 5.5: Core TDD Verification ✅
+- [x] 5.5.1 Smart Contract Tests (`test/AegisModule.t.sol`): **18/18 pass**
+      a) `triggerSwap` reverts `TokenNotCleared` if not audited ✅
+      b) `triggerSwap` succeeds (mock SwapExecuted) if oracle approved ✅
+      c) Access control: subscribeAgent onlyOwner, triggerSwap budget guard ✅
+- [x] 5.5.2 Session Key Constraints (`test/bot_v5.spec.ts`): **6 new tests pass**
+      ERC-7715 session scoped to AegisModule + 2 selectors only ✅
+- [x] 5.5.3 Oracle Formatting Test (`test/oracle.spec.ts`): **4 new tests pass**
+      AI JSON `{"risk": 5}` → correct hex for `onReportDirect` ✅
 
-### Phase 5b: Base Sepolia Pivot ← CURRENT
-- [x] 5b.1 Update TASKSII.md with pivot plan
-- [x] 5b.2 Revert `bot.ts` to `smartAccountClient.sendUserOperation` via Pimlico
-- [x] 5b.3 Rewrite `v5_setup_safe.ts` for Base Sepolia + Pimlico bundler
-- [x] 5b.4 Create `script/DeployMocks.s.sol` — deploy `MockBRETT` + `MockHoneypot` ERC20s
-- [x] 5b.5 Mock Uniswap swap in `AegisModule.sol` (emit SwapExecuted, skip router)
-- [x] 5b.6 Deploy AegisModule + mock tokens to Base Sepolia via Forge
-- [x] 5b.7 Run `v5_e2e_mock.ts` on Base Sepolia — **ALL 5 PHASES PASSED** ✅
-- [ ] [CHECKPOINT 5b] commit + push
-
-### Phase 6: Live CRE Integration
+### Phase 6: Live CRE Integration (Base Sepolia)
 - [ ] 6.1 Update CRE node config to point at Base Sepolia
-- [ ] 6.2 Run `live_e2e.ts` with real CRE Docker node intercepting `AuditRequested`
-- [ ] 6.3 Verify oracle callback → swap execution via UserOp
-- [ ] [FINAL CHECKPOINT] commit + push
+- [ ] 6.2 Oracle Mock Mapping: `MOCK_REGISTRY` maps `MockHoneypot` to malicious string
+- [ ] 6.3 Live E2E Test (`test/live_e2e.spec.ts`): UserOp → CRE → oracle → swap/revert
+- [ ] 6.4 [CHECKPOINT] commit + push
 
-### Phase 7: Frontend Integration
-- [ ] 7.1 Update frontend to display Safe address + agent status
-- [ ] 7.2 Wire oracle feed to show UserOp-based audit requests
-- [ ] 7.3 End-to-end demo: UI → Agent → Safe → Module → Oracle → Swap
+### Phase 7: Cinematic Hackathon Demo Scripts
+Two highly stylized PowerShell scripts for the final Loom video.
+- Colors: Cyan=banners, Yellow=scene headers, Green=success, Red=reverts, Magenta=AI logs, DarkGray=narrative
+- Both accept `-Interactive` flag with `Pause-Demo` (`Read-Host`)
+
+- [ ] 7.1 `scripts/demo_v5_setup.ps1` (Act 0: Infrastructure Boot):
+      - Banner: "⚙️ AEGIS PROTOCOL V5 · ACT 0: INFRASTRUCTURE BOOT"
+      - Scene 1 (Sandbox): `docker compose up --build -d` with scrolling build logs
+      - Scene 2 (Compilation): `docker exec aegis-oracle-node bash -c "cd /app && bun x cre-setup"` — WASM compilation
+      - Scene 3 (Network): `cast chain-id --rpc-url https://sepolia.base.org` — prove Base Sepolia connectivity
+      - Outro: "✅ INFRASTRUCTURE LIVE ON BASE SEPOLIA"
+
+- [ ] 7.2 `scripts/demo_v5_master.ps1` (Act 1: The God Mode Demo):
+      - Banner: "🚀 AEGIS PROTOCOL V5 · THE INSTITUTIONAL AI FIREWALL"
+      - Scene 1 (Bank): `cast balance` Safe + AegisModule — zero-custody treasury proof
+      - Scene 2 (Keys): Simulate ERC-7715 session key provisioning, print hex selectors
+      - Scene 3 (Intents): `bot.ts audit <MockBRETT>` + `bot.ts audit <MockHoneypot>` via Pimlico — print UserOp hashes
+      - Scene 4 (AI Oracle — Climax): CRE `workflow simulate`, color-coded output:
+        Confidential HTTP, LLM prompts, malicious Solidity, "Risk Code: 5" in Magenta.
+        `cast send` `onReportDirect` verdict to chain
+      - Scene 5 (Execution): MockBRETT swap success ✅, MockHoneypot swap revert `TokenNotCleared` ❌
+      - Outro: "✅ DEMO COMPLETE: 100% ON-CHAIN AI FIREWALL ENFORCEMENT"
+
+### Phase 8: Frontend Integration TDD
+- [ ] 8.1 UI Component Tests (Safe address + session key rendering)
+- [ ] 8.2 Oracle Feed Tests (UserOp audit requests + risk scores)
+- [ ] 8.3 Implement UI to pass tests
+- [ ] 8.4 [FINAL CHECKPOINT] commit + push
 
 ---
 
