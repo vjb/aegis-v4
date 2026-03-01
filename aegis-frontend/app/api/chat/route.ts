@@ -230,6 +230,16 @@ RISK BIT MATRIX (8-bit, each bit is a specific risk vector):
 - Bit 7: Logic bomb — time-gated or condition-gated malicious code (AI consensus)
 
 SECURITY MODEL: Defense in Depth — GoPlus uses on-chain simulation, AI reads Solidity source. Both must independently miss for a bad token to pass. A token that fools GoPlus will still be caught by AI source analysis, and vice versa.
+
+HEIMDALL DECOMPILER (bytecode fallback for unverified contracts):
+- When BaseScan returns no verified source code, Aegis deploys the Heimdall Pipeline
+- Pipeline: eth_getCode → Heimdall Docker (heimdall-rs v0.9.2) → GPT-4o → 8-bit Risk Code
+- Heimdall runs locally as a Docker container — zero external API dependencies
+- It uses symbolic execution to reconstruct Solidity-like pseudocode from raw EVM bytecode
+- The decompiled output includes function signatures, storage patterns, and control flow
+- GPT-4o then analyzes the decompiled code for the same 4 AI risk bits (4-7)
+- This means Aegis can audit ANY deployed contract, even if source code is hidden
+- The /api/decompile endpoint provides on-demand decompilation
 `.trim();
     } catch (e: any) {
         return buildDemoFallback();
@@ -273,6 +283,14 @@ RISK BIT MATRIX (8-bit, each bit is a specific risk vector):
 - Bit 7: Logic bomb — time-gated or condition-gated malicious code (AI consensus)
 
 SECURITY MODEL: Defense in Depth — GoPlus uses on-chain simulation, AI reads Solidity source. Both must independently miss for a bad token to pass.
+
+HEIMDALL DECOMPILER (bytecode fallback for unverified contracts):
+- When BaseScan returns no verified source code, Aegis deploys the Heimdall Pipeline
+- Pipeline: eth_getCode → Heimdall Docker (heimdall-rs v0.9.2) → GPT-4o → 8-bit Risk Code
+- Heimdall runs locally as a Docker container — zero external API dependencies, no Cloudflare blocks
+- It uses symbolic execution to reconstruct Solidity-like pseudocode from raw EVM bytecode
+- GPT-4o analyzes the decompiled code for AI risk bits 4-7 (tax, privilege, external calls, logic bombs)
+- This means Aegis can audit ANY deployed contract, even if source code is hidden
 `.trim();
 }
 
@@ -303,6 +321,8 @@ Your knowledge:
 - You know the owner wallet address and balance
 - The firewallConfig is ALWAYS set by the human owner via setFirewallConfig() — agents CANNOT change their own rules
 - Defense in Depth: GoPlus AND AI are independent detection layers — both must miss for risk to pass
+- You know about the Heimdall bytecode decompiler — a local Docker container that reverse-engineers unverified contracts into readable Solidity when BaseScan has no verified source
+- When users ask "how does Heimdall work" or about bytecode decompilation, explain the pipeline: eth_getCode → Heimdall (symbolic execution) → GPT-4o → risk code
 
 LIVE CHAIN STATE:
 ${chainContext}
