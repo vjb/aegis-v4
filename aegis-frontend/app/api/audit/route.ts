@@ -20,6 +20,7 @@ const Tokens: Record<string, string> = {
     'HoneypotCoin': '0x000000000000000000000000000000000000000b',
     'TAX': '0x000000000000000000000000000000000000000c',
     'TaxToken': '0x000000000000000000000000000000000000000c',
+    'honeytrap': '0x000000000000000000000000000000000000000b',
     'TimeBomb': '0x0000000000000000000000000000000000000010',
 };
 
@@ -35,6 +36,7 @@ const EXPECTED_SCORES: Record<string, number> = {
     'TAX': 18,           // bit 1 (sell restriction) + bit 4 (obfuscated tax)
     'TaxToken': 18,
     'UnverifiedDoge': 1, // bit 0 (unverified source)
+    'honeytrap': 36,
     'TimeBomb': 128,     // bit 7 (logic bomb)
 };
 
@@ -147,8 +149,10 @@ export async function GET(req: NextRequest) {
                     if (tm) cleaned = tm[1];
 
                     // ── Final score ──────────────────────────────────────
-                    for (const pat of [/Final Risk Code: (\d+)/, /⚖️ Final Risk Code: (\d+)/, /\[Internal\] Final Decimal Code: (\d+)/]) {
-                        const m = cleaned.match(pat) || str.match(pat);
+                    // Strip emoji/non-ASCII for robust matching (Windows Docker pipe can garble encoding)
+                    const asciiOnly = cleaned.replace(/[^\x20-\x7E]/g, '').trim();
+                    for (const pat of [/Final Risk Code:\s*(\d+)/, /\[Internal\] Final Decimal Code:\s*(\d+)/]) {
+                        const m = asciiOnly.match(pat) || cleaned.match(pat) || str.match(pat);
                         if (m) { extractedScore = parseInt(m[1], 10); activeLlm = null; return; }
                     }
 
@@ -223,8 +227,8 @@ export async function GET(req: NextRequest) {
                         return;
                     }
                     if (cleaned.match(/\[GPT-4o\] Response:/)) {
-                        const resp = cleaned.replace(/.*\[GPT-4o\] Response:\s*/, '').slice(0, 200);
-                        send({ type: 'llm-reasoning-chunk', model: 'OpenAI GPT-4o', text: resp + ' ' }); return;
+                        // Absorb — reasoning text comes from [GPT-4o] Reasoning: line
+                        return;
                     }
 
                     // ── Llama-3 reasoning + risk bits ─────────────────────
@@ -242,8 +246,8 @@ export async function GET(req: NextRequest) {
                         return;
                     }
                     if (cleaned.match(/\[Llama-3\] Response:/)) {
-                        const resp = cleaned.replace(/.*\[Llama-3\] Response:\s*/, '').slice(0, 200);
-                        send({ type: 'llm-reasoning-chunk', model: 'Groq Llama-3', text: resp + ' ' }); return;
+                        // Absorb — reasoning text comes from [Llama-3] Reasoning: line
+                        return;
                     }
 
                     // ── AI union summary ──────────────────────────────────
