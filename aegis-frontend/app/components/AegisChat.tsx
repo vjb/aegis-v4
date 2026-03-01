@@ -73,10 +73,11 @@ const AUDIT_TOKENS = ['BRETT', 'TOSHI', 'DEGEN', 'WETH', 'HoneypotCoin', 'TaxTok
 const SUGGESTIONS = [
     'What agents are connected?',
     'What is the firewall configured to block?',
-    'What happened to REX?',
     'Explain Defense in Depth',
     'Audit BRETT',
     'Audit HoneypotCoin',
+    'Audit UnverifiedDoge',
+    'How does Heimdall decompile bytecode?',
 ];
 
 function detectAuditIntent(text: string): string | null {
@@ -86,12 +87,13 @@ function detectAuditIntent(text: string): string | null {
             lower === `audit ${t.toLowerCase()} please` ||
             lower.startsWith(`audit ${t.toLowerCase()} `) ||
             lower === `check ${t.toLowerCase()}` ||
-            lower === `scan ${t.toLowerCase()}`) {
+            lower === `scan ${t.toLowerCase()}` ||
+            lower === `decompile ${t.toLowerCase()}`) {
             return t;
         }
     }
-    // Generic: "audit X" where X is anything
-    const m = lower.match(/^(?:audit|check|scan)\s+([a-z0-9]+)/i);
+    // Generic: "audit|check|scan|decompile X" where X is anything
+    const m = lower.match(/^(?:audit|check|scan|decompile)\s+([a-z0-9]+)/i);
     if (m) return m[1];
     return null;
 }
@@ -147,10 +149,13 @@ export default function AegisChat({
         const auditToken = detectAuditIntent(userText);
         if (auditToken && onAuditRequest) {
             const userMsg: Message = { id: Date.now().toString(), role: 'user', text: userText };
+            const isUnverified = ['UnverifiedDoge', 'TimeBomb'].some(t => auditToken.toLowerCase().includes(t.toLowerCase()));
             const aegisMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'aegis',
-                text: `🔍 Launching CRE oracle audit for **${auditToken}**… Check the Oracle Feed on the right. I'll update you here when the verdict is in.`,
+                text: isUnverified
+                    ? `🔍 Launching CRE oracle audit for **${auditToken}**… This token is unverified — Heimdall bytecode decompilation will activate as fallback. Check the Oracle Feed on the right.`
+                    : `🔍 Launching CRE oracle audit for **${auditToken}**… Check the Oracle Feed on the right. I'll update you here when the verdict is in.`,
             };
             setMessages(prev => [...prev, userMsg, aegisMsg]);
             setPendingAuditToken(auditToken);
