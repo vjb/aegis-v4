@@ -183,6 +183,16 @@ The result is an **8-bit risk matrix** delivered to `AegisModule.onReport(tradeI
 
 ---
 
+## 🛡️ Zero-Trust "Default Deny"
+
+Aegis operates on a strict zero-trust basis: **any interaction with an unverified smart contract is automatically blocked.** Bit 0 of the 8-bit risk matrix (`Unverified source code`) is set by the GoPlus static analysis layer whenever a contract's source code cannot be retrieved from BaseScan. The threshold is configurable by the Safe owner via the firewall config, but the default posture is always *deny*.
+
+This means shady coins — tokens deployed without verified source, proxy-hidden logic, or freshly deployed honeypots — are stopped before the AI pipeline even runs. The AI models (GPT-4o + Llama-3) only analyze contracts that have passed the initial GoPlus gate.
+
+> **Roadmap:** In upcoming versions, Aegis will handle unverified contracts by routing their raw EVM bytecode through advanced decompilers (such as [Dedaub](https://dedaub.com/) or [Heimdall](https://github.com/Jon-Becker/heimdall-rs)) to reconstruct the contract logic before feeding it into the parallel LLM pipeline. This will extend coverage to contracts that are intentionally deployed unverified to evade source-level analysis.
+
+---
+
 ## 🔥 Dynamic Firewall Configuration
 
 The vault owner sets the AI firewall policy by calling `setFirewallConfig(string)` — either directly on-chain or via the Rules of Engagement panel in the UI. The rules are stored in contract state and automatically applied to every trade request. **Agents cannot override or bypass the firewall policy.**
