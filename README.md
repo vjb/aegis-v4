@@ -22,7 +22,7 @@
 | MockBRETT | [`0x46d40e0abda0814bb0cb323b2bb85a129d00b0ac`](https://sepolia.basescan.org/address/0x46d40e0abda0814bb0cb323b2bb85a129d00b0ac) | Deployed |
 | MockHoneypot | [`0xf672c8fc888b98db5c9662d26e657417a3c453b5`](https://sepolia.basescan.org/address/0xf672c8fc888b98db5c9662d26e657417a3c453b5) | Deployed |
 
-> **Owner:** `0x109D8072B1762263ed094BC05c5110895Adc65Cf` · Full source code readable on BaseScan
+> **Owner:** [`0x109D8072B1762263ed094BC05c5110895Adc65Cf`](https://sepolia.basescan.org/address/0x109D8072B1762263ed094BC05c5110895Adc65Cf)
 
 ---
 
@@ -47,35 +47,23 @@ Think of it like issuing a corporate credit card to a new employee. The CEO (you
 
 ## V5 Architecture (Live on Base Sepolia)
 
-```
-AI Agent  (ERC-7715 session key — scoped to requestAudit + triggerSwap only)
-         │
-         │  smartAccountClient.sendUserOperation()
-         ▼
-   Pimlico Cloud Bundler  (gas estimation, paymaster, EntryPoint submission)
-         │
-         ▼
-   ERC-4337 EntryPoint 0.7  (on Base Sepolia)
-         │
-         ▼
-   Safe Smart Account  (ERC-7579 — AegisModule installed as Executor)
-         │
-    requestAudit(token) ──►  AuditRequested event emitted on-chain
-         │
-         ▼
-   Chainlink CRE DON  (live Docker node)
-   ┌─────────────────────────────────────┐
-   │  GoPlus Security API  (live)        │
-   │  BaseScan ConfidentialHTTP (live)   │
-   │  GPT-4o  +  Llama-3   (live)       │
-   │  8-bit riskScore aggregated         │
-   └─────────────────────────────────────┘
-         │
-    onReport(tradeId, riskScore)  ◄─  CRE node wallet signs & sends
-         │
-         ▼
-   riskScore == 0 → triggerSwap() → Swap executes
-   riskScore >  0 → ClearanceDenied — trade wiped, capital preserved
+```mermaid
+graph TD
+    Agent["🤖 AI Agent<br/>ERC-7715 session key — scoped to requestAudit + triggerSwap only"]
+    Bundler["📦 Pimlico Cloud Bundler<br/>gas estimation · paymaster · EntryPoint submission"]
+    EP["🔗 ERC-4337 EntryPoint 0.7<br/>on Base Sepolia"]
+    Safe["💰 Safe Smart Account<br/>ERC-7579 — AegisModule installed as Executor"]
+    CRE["🔮 Chainlink CRE DON<br/>GoPlus · BaseScan ConfidentialHTTP · GPT-4o + Llama-3"]
+    Swap["✅ triggerSwap → Swap executes"]
+    Deny["🔴 ClearanceDenied — capital preserved"]
+
+    Agent -->|"sendUserOperation()"| Bundler
+    Bundler -->|"handleOps"| EP
+    EP -->|"execute"| Safe
+    Safe -->|"requestAudit(token)"| CRE
+    CRE -->|"onReport(tradeId, riskScore)"| Safe
+    Safe -->|"riskScore == 0"| Swap
+    Safe -->|"riskScore > 0"| Deny
 ```
 
 ---
@@ -261,7 +249,7 @@ pnpm install
 ### 2. Run smart contract tests
 ```bash
 forge test --match-contract AegisModuleTest -vv
-# Expected: 18 passed, 0 failed
+# Expected: 21 passed, 0 failed
 ```
 
 ### 3. Run TypeScript tests
@@ -299,8 +287,7 @@ Every on-chain transaction maps to one of these functions on [`AegisModule.sol`]
 |---|---|---|
 | `depositETH()` | Owner | Deposits raw ETH into the module treasury. |
 | `subscribeAgent(address, uint256)` | Owner | Grants an agent wallet permission to trade, with a strict ETH budget cap. |
-| `revokeAgent(address)` | Owner | Kill switch. Instantly zeros the agent's budget and deauthorizes it. |
-| `killSwitch()` | Owner | Emergency — zeroes ALL agent budgets simultaneously. |
+| `revokeAgent(address)` | Owner | Instantly zeros the agent's budget and deauthorizes it. |
 | `withdrawETH(uint256)` | Owner | Withdraws ETH from the treasury back to the owner. |
 | `withdrawERC20(address, uint256)` | Owner | Withdraws any ERC-20 tokens held in the module. |
 | `setFirewallConfig(string)` | Owner | Sets the vault-wide AI firewall policy. Rules are stored on-chain and automatically applied to every audit. |
@@ -311,14 +298,14 @@ Every on-chain transaction maps to one of these functions on [`AegisModule.sol`]
 
 ---
 
-## 🧠 The Left Brain & Right Brain Subroutine
+## 🧠 Multi-Model AI Audit
 
-Aegis orchestrates a parallel **multi-model audit** within the CRE. Both models receive identical Solidity source code and produce independent risk assessments:
+Aegis orchestrates a parallel **multi-model audit** within the CRE WASM sandbox. Both models receive identical Solidity source code and produce independent risk assessments:
 
 | Model | Role | Strengths |
 |---|---|---|
-| **GPT-4o** (Right Brain) | Deep semantic forensics | Catches obfuscated tax functions, privilege escalation patterns, complex logic bombs |
-| **Llama-3 via Groq** (Left Brain) | High-speed consensus | Sub-second inference, catches the same patterns independently for BFT consensus |
+| **GPT-4o** | Deep semantic forensics | Catches obfuscated tax functions, privilege escalation patterns, complex logic bombs |
+| **Llama-3 via Groq** | High-speed consensus | Sub-second inference, catches the same patterns independently for BFT consensus |
 
 The oracle produces a bitwise **"Union of Fears"** risk bitmask — if *either* model flags a risk, the corresponding bit is set. This is maximally conservative: the system catches threats that either model detects independently.
 
@@ -380,7 +367,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | `/src` | Solidity source — [`AegisModule.sol`](src/AegisModule.sol) (ERC-7579 Executor) |
 | `/cre-node` | Chainlink CRE workflow — [`aegis-oracle.ts`](cre-node/aegis-oracle.ts), `workflow.yaml` |
 | `/scripts` | Demo scripts, AA config modules, E2E mock test |
-| `/test` | Forge + Jest test suites (18 + 83 = 101 tests) |
+| `/test` | Forge + Jest test suites (21 + 83 = 104 tests) |
 | `/aegis-frontend` | Next.js Agentic Command Center — chat, oracle feed, firewall UI |
 | `/docs` | Architecture, Confidential HTTP, Demo Guide, sample outputs |
 | `/script` | Foundry deployment scripts (`DeployMocks.s.sol`) |
@@ -397,7 +384,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | CRE-Only Showcase | Raw CRE output proving WASM sandbox + AI consensus + ConfidentialHTTP | [`demo_v5_cre.ps1`](scripts/demo_v5_cre.ps1) |
 | Blockchain + External API | CRE bridges GoPlus, BaseScan, OpenAI, and Groq into deterministic on-chain callback | [`cre-node/aegis-oracle.ts`](cre-node/aegis-oracle.ts) |
 | Automated Risk Monitoring | 8-bit risk matrix with owner-configurable firewall knobs | [`src/AegisModule.sol`](src/AegisModule.sol) |
-| Protocol Safeguard Triggers | `TokenNotCleared()` revert, `ClearanceDenied` event, `killSwitch()` | [`test/AegisModule.t.sol`](test/AegisModule.t.sol) |
+| Protocol Safeguard Triggers | `TokenNotCleared()` revert, `ClearanceDenied` event, `revokeAgent()` | [`test/AegisModule.t.sol`](test/AegisModule.t.sol) |
 | Video Demonstration | 3–5 min demo showcasing end-to-end workflow | [Demo Video](#) |
 
 ### Track: CRE & AI
@@ -452,13 +439,6 @@ To maintain Byzantine consensus, the Oracle Workflow follows strict rules:
 
 ---
 
-## 🚀 Business Impact & Future Roadmap
-
-### The Evolution: Standalone Vault → Modular Smart Account
-
-- **V3 (Hackathon Prototype):** Standalone monolithic vault (`AegisVault.sol`) on Tenderly VNet. Proved the core innovations: Chainlink multi-model BFT AI consensus and JIT execution.
-- **V5 (Current):** ERC-7579 Executor Module (`AegisModule.sol`) that installs onto any ERC-4337 Safe Smart Account. Users don't fracture liquidity into custom protocol vaults — Aegis installs directly into their existing wallet.
-
 ### 💰 Built-In Monetization
 
 Because Aegis sits at the execution layer — every cleared trade flows through the protocol:
@@ -467,12 +447,6 @@ Because Aegis sits at the execution layer — every cleared trade flows through 
 |---|---|
 | **Protocol Fee** | A microscopic fee (e.g., 0.05%) on every successful JIT execution. Deducted atomically inside `triggerSwap()`. |
 | **Enterprise SaaS** | Hedge funds and DAOs pay to route autonomous trading fleets through the Aegis CRE multi-model firewall. |
-
-### 🔮 Next-Generation Extensions
-
-1. **Cross-Chain Sentry via Chainlink CCIP** — Aegis intercepts cross-chain swap intents before CCIP bridges the funds.
-2. **On-Chain Security Registry via EAS** — Every AI verdict becomes a cryptographically signed attestation. Other protocols can query Aegis EAS records without re-running the heavy AI computation.
-3. **Moltbook Integration** — Aegis's autonomous trading agent is registered on Moltbook, demonstrating agent-to-agent social participation alongside on-chain execution.
 
 ---
 
