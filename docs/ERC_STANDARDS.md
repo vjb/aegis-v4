@@ -35,7 +35,7 @@ Aegis uses **Safe Smart Accounts** as the wallet layer. The AI agent never holds
 
 | Component | Status | Why |
 |---|---|---|
-| Paymaster gas sponsorship | ⚠️ Simulated in demo scripts | Demo scripts use `cast send` (direct EOA calls) for reliability during presentations. The E2E test ([`v5_e2e_mock.ts`](../scripts/v5_e2e_mock.ts)) uses real UserOps with Pimlico. |
+| Paymaster gas sponsorship | ✅ Proven in E2E | Demo scripts use `cast send` (direct EOA) for reliability. The E2E test ([`v5_e2e_mock.ts`](../scripts/v5_e2e_mock.ts)) uses real Pimlico-sponsored UserOps — see [`erc4337_userop_run.txt`](sample_output/erc4337_userop_run.txt). |
 
 ### Key Files
 
