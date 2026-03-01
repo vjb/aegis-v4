@@ -153,6 +153,26 @@ docker run -d -p 8080:8080 --name aegis-heimdall aegis-heimdall
 
 ---
 
+## 🖥️ Frontend Dashboard
+
+Aegis ships with a **Next.js 3-panel command center** that lets you manage agents, configure the firewall, trigger live oracle audits, and monitor results in real time.
+
+| Panel | Purpose |
+|---|---|
+| **Left — Agents / Firewall / Marketplace** | Manage subscribed agents (subscribe, revoke, trade), toggle 8-bit firewall risk toggles, browse pre-built trading strategies |
+| **Center — AI Chat** | Natural language interface to query treasury balance, list agents, or trigger audits ("audit BRETT") |
+| **Right — Oracle Feed** | Real-time SSE stream showing GoPlus → BaseScan → Heimdall → GPT-4o → Llama-3 → Verdict with on-chain explorer links |
+
+**Key Features:**
+- 🔴 **Kill Switch** — one-click protocol lock that halts all agentic outflow and severs Smart Account connections
+- 🟣 **Heimdall Status** — live Docker decompiler indicator in the header alongside CRE DON status
+- 🎯 **Drag-to-Resize** — adjustable panel widths for any screen size
+- 🏪 **Agent Marketplace** — 4 pre-built strategies (BLUECHIP, YIELD, DEGEN, SAFE) with color-coded risk badges
+
+> **UI Test Matrix:** [`docs/UI_TEST_MATRIX.md`](docs/UI_TEST_MATRIX.md) — 50 automated test cases across 10 categories
+
+---
+
 ## 🏗️ The Separation of Identity and Capital
 
 The fundamental security philosophy of Aegis is the strict separation of **Execution Identity** and **Trading Capital**. The protocol relies on three distinct actors:
@@ -192,6 +212,7 @@ The AI agent (holding only an ERC-7715 session key) sends a UserOp calling `Aegi
 The Chainlink CRE DON catches the event and runs a multi-phase audit:
 - **GoPlus** — static on-chain analysis (honeypot, sell restriction, proxy)
 - **BaseScan** — source code retrieval (via ConfidentialHTTPClient)
+- **Heimdall** — fallback bytecode decompilation for unverified contracts (local Docker, no external APIs)
 - **GPT-4o + Llama-3** — dual-model AI consensus (obfuscated tax, privilege escalation, logic bombs)
 
 The result is an **8-bit risk matrix** delivered to `AegisModule.onReport(tradeId, riskScore)`.
