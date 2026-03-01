@@ -264,7 +264,7 @@ export default function Home() {
 
       {/* Kill switch banner */}
       {isKilled && (
-        <div className="px-8 py-3 flex items-center gap-2.5 mono text-xs font-semibold flex-shrink-0 slide-in"
+        <div className="px-8 py-3 flex items-center gap-2.5 mono text-xs font-semibold flex-shrink-0 slide-in kill-active"
           style={{ background: 'rgba(251,191,36,0.07)', borderBottom: '1px solid rgba(251,191,36,0.18)', color: 'var(--amber)' }}>
           <Zap className="w-3.5 h-3.5" />
           PROTOCOL LOCKED — All agentic outflow halted. Smart Account connections severed.

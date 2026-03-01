@@ -287,7 +287,7 @@ export default function OracleFeed({ isKilled, externalTrigger, onTriggerConsume
 
                             {/* Verdict */}
                             {run.verdict && (
-                                <div className="card slide-in" style={{
+                                <div className={`card slide-in ${run.verdict.status === 'APPROVED' ? 'verdict-approved' : 'verdict-blocked'}`} style={{
                                     marginTop: 10, padding: '16px',
                                     background: run.verdict.status === 'APPROVED' ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)',
                                     borderColor: run.verdict.status === 'APPROVED' ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)',

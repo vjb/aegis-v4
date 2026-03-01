@@ -316,3 +316,122 @@ input[type="range"]::-webkit-slider-thumb {
   letter-spacing: 0.1em;
   margin-bottom: 14px;
 }
+
+/* === Premium Micro-Animations === */
+
+/* Shimmer loading skeleton */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    rgba(56, 189, 248, 0.06) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Danger button hover glow */
+.btn-danger:hover {
+  background: rgba(255, 107, 107, 0.2);
+  box-shadow: 0 0 16px rgba(255, 77, 77, 0.25);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+/* Kill switch pulse when active */
+@keyframes kill-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(251, 191, 36, 0.15); }
+  50% { box-shadow: 0 0 24px rgba(251, 191, 36, 0.35); }
+}
+
+.kill-active {
+  animation: kill-pulse 2s ease-in-out infinite;
+}
+
+/* Approved verdict card breathing glow */
+@keyframes approved-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.2), 0 2px 12px rgba(74, 222, 128, 0.05); }
+  50% { box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.35), 0 4px 20px rgba(74, 222, 128, 0.1); }
+}
+
+.verdict-approved {
+  animation: approved-glow 3s ease-in-out infinite;
+}
+
+/* Blocked verdict card warning pulse */
+@keyframes blocked-pulse {
+  0%, 100% { border-color: rgba(248, 113, 113, 0.2); }
+  50% { border-color: rgba(248, 113, 113, 0.5); }
+}
+
+.verdict-blocked {
+  animation: blocked-pulse 2s ease-in-out infinite;
+}
+
+/* Staggered fade-in for list items */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.3s ease-out forwards;
+}
+
+.fade-up:nth-child(1) { animation-delay: 0s; }
+.fade-up:nth-child(2) { animation-delay: 0.05s; }
+.fade-up:nth-child(3) { animation-delay: 0.1s; }
+.fade-up:nth-child(4) { animation-delay: 0.15s; }
+.fade-up:nth-child(5) { animation-delay: 0.2s; }
+
+/* Heimdall purple glow */
+@keyframes heimdall-glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(129, 140, 248, 0.2); }
+  50% { box-shadow: 0 0 14px rgba(129, 140, 248, 0.4); }
+}
+
+.heimdall-glow {
+  animation: heimdall-glow 2.5s ease-in-out infinite;
+}
+
+/* Subtle noise texture overlay for depth */
+main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.015;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(56, 189, 248, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(129, 140, 248, 0.1) 0%, transparent 50%);
+}
+
+/* Tooltip arrow */
+.tooltip-arrow::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0;
+  border-style: solid;
+  border-color: var(--bg-elevated) transparent transparent;
+}
+
+/* Focus ring for accessibility */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(56, 189, 248, 0.25);
+  color: var(--text-primary);
+}
