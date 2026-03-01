@@ -13,6 +13,7 @@
 | [demo_v5_setup_run.txt](demo_v5_setup_run.txt) | `demo_v5_setup.ps1` | Infrastructure boot: Base Sepolia ✅, Docker ✅, WASM ✅ |
 | [demo_v5_master_run.txt](demo_v5_master_run.txt) | `demo_v5_master.ps1` | Full 7-act lifecycle: subscribe → audit → CRE AI → swap/revert → budget → kill switch |
 | [demo_v5_cre_run.txt](demo_v5_cre_run.txt) | `demo_v5_cre.ps1` | Raw CRE WASM execution with GPT-4o + Llama-3 consensus |
+| [erc4337_userop_run.txt](erc4337_userop_run.txt) | `v5_e2e_mock.ts` | **ERC-4337 proof:** Safe deploy → Pimlico UserOp → triggerSwap via Account Abstraction |
 
 ## Key Highlights in `demo_v5_master_run.txt`
 
