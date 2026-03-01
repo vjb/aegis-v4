@@ -21,9 +21,8 @@ services:
     tty: true
     stdin_open: true
 
-  # ── V5: Alto ERC-4337 Bundler (local, Tenderly VNet) ──────────────────────
-  # Used in Phases 2-5 for local UserOperation simulation.
-  # Phase 5+ switches to Pimlico hosted bundler on Base Sepolia.
+  # ── LEGACY: Alto ERC-4337 Bundler (local dev only — NOT used in V5 submission)
+  # V5 uses Pimlico Cloud Bundler on Base Sepolia. Kept for local Anvil testing.
   alto-bundler:
     image: node:20-alpine
     container_name: aegis-alto-bundler

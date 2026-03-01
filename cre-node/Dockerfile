@@ -37,7 +37,7 @@ ENV PATH="$BUN_INSTALL/bin:$PATH"
 RUN curl -fsSL https://bun.sh/install | bash
 
 # 5. Install Foundry (Smart Contract Power Tools)
-# Includes 'forge' for compiling and 'cast' for interacting with the AegisVault.
+# Includes 'forge' for compiling and 'cast' for interacting with the AegisModule.
 ENV PATH="/root/.foundry/bin:$PATH"
 RUN curl -L https://foundry.paradigm.xyz | bash && \
     foundryup
