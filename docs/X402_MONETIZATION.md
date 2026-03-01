@@ -4,30 +4,24 @@ Aegis exposes its CRE threat-intelligence pipeline as a **paid API** using the [
 
 ## How It Works
 
-```
-Agent                        Aegis API                   Facilitator (x402.org)
-  │                              │                              │
-  │  GET /api/oracle/audit       │                              │
-  │  ?token=0x...                │                              │
-  │─────────────────────────────►│                              │
-  │                              │                              │
-  │  402 Payment Required        │                              │
-  │  { accepts: [USDC, $0.05] }  │                              │
-  │◄─────────────────────────────│                              │
-  │                              │                              │
-  │  GET /api/oracle/audit       │                              │
-  │  X-PAYMENT: <signed EIP-3009>│                              │
-  │─────────────────────────────►│  POST /verify                │
-  │                              │─────────────────────────────►│
-  │                              │  { isValid: true }           │
-  │                              │◄─────────────────────────────│
-  │                              │                              │
-  │                              │  [run CRE pipeline]          │
-  │                              │                              │
-  │  200 OK                      │  POST /settle                │
-  │  { riskCode, verdict, ... }  │─────────────────────────────►│
-  │◄─────────────────────────────│  { success, txHash }         │
-  │                              │◄─────────────────────────────│
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Aegis as Aegis API
+    participant Fac as Facilitator (x402.org)
+
+    Agent->>Aegis: GET /api/oracle/audit?token=0x...
+    Aegis-->>Agent: 402 Payment Required<br/>{ accepts: [USDC, $0.05] }
+
+    Agent->>Aegis: GET /api/oracle/audit<br/>X-PAYMENT: signed EIP-3009
+    Aegis->>Fac: POST /verify
+    Fac-->>Aegis: { isValid: true }
+
+    Note over Aegis: Run CRE pipeline
+
+    Aegis-->>Agent: 200 OK<br/>{ riskCode, verdict, ... }
+    Aegis->>Fac: POST /settle
+    Fac-->>Aegis: { success, txHash }
 ```
 
 1. **No payment** → 402 with USDC payment instructions (price, network, asset address).
