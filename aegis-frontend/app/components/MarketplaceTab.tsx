@@ -59,6 +59,17 @@ const TEMPLATES: AgentTemplate[] = [
         icon: '🛡️',
         tokens: ['WETH', 'USDC', 'cbETH'],
     },
+    {
+        id: 'heimdall',
+        name: 'HEIMDALL_BOT',
+        description: 'Specializes in unverified contracts using Heimdall bytecode decompilation. Audits raw EVM bytecode when no source is available.',
+        strategy: 'Bytecode analysis · Selective',
+        suggestedBudget: 0.1,
+        riskLevel: 'Aggressive',
+        clearanceRate: 45,
+        icon: '🔮',
+        tokens: ['UnverifiedDoge', 'raw bytecode'],
+    },
 ];
 
 const RISK_COLORS: Record<AgentTemplate['riskLevel'], { color: string; bg: string; border: string }> = {
