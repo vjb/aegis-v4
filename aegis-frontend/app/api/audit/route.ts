@@ -268,7 +268,7 @@ export async function GET(req: NextRequest) {
 
                     // ── Catch-all: active LLM streaming ──────────────────
                     // Filter out: CRE framework errors, raw JSON fragments, log metadata
-                    if (activeLlm && !cleaned.startsWith('[') && !cleaned.startsWith('{') && !cleaned.startsWith('"') && !cleaned.includes('Capability ') && !cleaned.includes('Workflow execution') && !cleaned.includes('cannot read property') && !cleaned.includes('returned an error') && !cleaned.includes('HTTP') && !cleaned.includes('Prompt sent') && !cleaned.includes('Sending') && !cleaned.includes('truncated')) {
+                    if (activeLlm && !cleaned.startsWith('[') && !cleaned.startsWith('{') && !cleaned.startsWith('}') && !cleaned.startsWith('"') && !cleaned.includes('Capability ') && !cleaned.includes('Workflow execution') && !cleaned.includes('cannot read property') && !cleaned.includes('returned an error') && !cleaned.includes('HTTP') && !cleaned.includes('Prompt sent') && !cleaned.includes('Sending') && !cleaned.includes('truncated')) {
                         send({ type: 'llm-reasoning-chunk', model: activeLlm, text: cleaned + ' ' });
                     }
                 };
