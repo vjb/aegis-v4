@@ -1,6 +1,6 @@
 # Aegis Protocol V5 — System Architecture
 
-> 12 Mermaid diagrams covering all layers of the Aegis V5 stack.
+> 13 Mermaid diagrams covering all layers of the Aegis V5 stack, including the Heimdall bytecode fallback pipeline.
 
 ---
 
@@ -116,6 +116,43 @@ flowchart LR
     style AI2 fill:#fce4ec,stroke:#ad1457,color:#880e4f
     style AI3 fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
     style REPORT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+```
+
+---
+
+## 3b. Heimdall Bytecode Fallback Pipeline
+
+> When BaseScan returns no verified source code, this fallback activates automatically.
+
+```mermaid
+flowchart TD
+    BS[/"BaseScan Response"/]
+    CHECK{"Verified source\navailable?"}
+    SOURCE["✅ Solidity Source\n→ AI reads directly"]
+    NOCODE["❌ No verified code"]
+
+    subgraph Heimdall["🔮 Heimdall Docker Pipeline"]
+        RPC["eth_getCode(address)\nvia JSON-RPC"]
+        DECOMP["Heimdall-rs v0.9.2\nSymbolic Execution"]
+        PSEUDO["Reconstructed Solidity\nFunctions · Storage · Control Flow"]
+    end
+
+    AI["GPT-4o Analysis\nof decompiled pseudocode"]
+    RISK["8-bit Risk Code\nbits 4–7: tax · priv · extCall · bomb"]
+
+    BS --> CHECK
+    CHECK -->|Yes| SOURCE --> AI
+    CHECK -->|No| NOCODE --> RPC
+    RPC --> DECOMP --> PSEUDO --> AI
+    AI --> RISK
+
+    style NOCODE fill:#ffebee,stroke:#c62828,color:#b71c1c
+    style SOURCE fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style RPC fill:#ede7f6,stroke:#4527a0,color:#311b92
+    style DECOMP fill:#ede7f6,stroke:#4527a0,color:#311b92
+    style PSEUDO fill:#ede7f6,stroke:#4527a0,color:#311b92
+    style AI fill:#e8eaf6,stroke:#283593,color:#1a237e
+    style RISK fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
 ```
 
 ---
