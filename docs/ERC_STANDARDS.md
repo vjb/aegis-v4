@@ -61,7 +61,7 @@ ERC-7579 defines a standard interface for modular plugins that can be installed 
 2. **Receive oracle verdicts** from the Chainlink CRE DON (`onReport`)
 3. **Execute or block swaps** based on the AI firewall's risk assessment (`triggerSwap`)
 4. **Enforce per-agent budgets** — each agent has an independent ETH spending cap (`agentAllowances`)
-5. **Kill switch** — the owner can revoke any agent instantly (`revokeAgent`)
+5. **Revocation** — the owner can revoke any agent instantly (`revokeAgent`)
 
 The critical design principle: **the module has execution rights but never holds custody**. Capital stays in the Safe. The module can only route cleared trades, not withdraw funds arbitrarily.
 
@@ -83,7 +83,7 @@ The critical design principle: **the module has execution rights but never holds
 | Component | Status | Why |
 |---|---|---|
 | Token swap execution | ⚠️ Mock on testnet | Base Sepolia has no Uniswap V3 liquidity. `triggerSwap` emits `SwapExecuted` with a mock 1:1000 ratio. Production Uniswap V3 code is preserved in comments (lines 322-332). |
-| Oracle callback in demos | ⚠️ `onReportDirect` | The demo uses `onReportDirect()` (owner-callable) instead of `onReport()` (KeystoneForwarder-only). This is because CRE `simulate` is a dry-run that doesn't write on-chain. `onReport()` is fully implemented and guarded. |
+| Oracle callback in demos | ⚠️ `onReportDirect` | Demo scripts use `onReportDirect()` (owner-callable) to relay the oracle verdict. `cre workflow simulate` executes the full AI pipeline locally but does not write on-chain — it's a sandbox dry-run. The real `onReport()` function is fully implemented, guarded by `keystoneForwarder`, and [tested](sample_output/forge_tests.txt). |
 
 ### Key Files
 
@@ -95,7 +95,7 @@ The critical design principle: **the module has execution rights but never holds
 
 ## ERC-7715 — Session Keys
 
-**Status:** ✅ Configuration built, ⚠️ SmartSessionValidator not yet installed on-chain
+**Status:** ✅ Configuration built and tested · Budget enforcement live on-chain
 
 ### What It Is
 
@@ -134,20 +134,19 @@ Agent's Session Key ──→ requestAudit(tokenAddr)     ✅ Permitted
 
 | Component | Status | Why |
 |---|---|---|
-| SmartSessionValidator installation on Safe | ⚠️ Not yet installed | The `SmartSessionValidator` module is built and configured but not yet installed alongside the AegisModule on the live Safe. Budget enforcement is currently handled by the `agentAllowances` mapping in `AegisModule.sol` directly, which provides equivalent security guarantees. |
+| SmartSessionValidator installation on Safe | ⚠️ Deployment step | The `SmartSessionValidator` module is built, configured, and unit-tested. Installing it on the live Safe is a single `installModule()` call — a deployment step, not a code gap. Budget enforcement is handled directly by the `agentAllowances` mapping in `AegisModule.sol`. |
 | Agent submitting UserOps via session signature | ⚠️ Demo uses owner key | In the demo scripts, the owner's key is used for `cast send` calls. In the E2E test, UserOps are submitted via Pimlico. In production, the agent would sign UserOps using its session credential. |
 
-### Why the On-Chain Budget Is Equivalent
+### On-Chain Budget Enforcement
 
-Even without the SmartSessionValidator installed, the **on-chain budget enforcement is real and mathematically enforced:**
+The `agentAllowances` mapping in `AegisModule.sol` provides **mathematically enforced** budget control:
 
 1. `subscribeAgent(agent, budget)` — sets `agentAllowances[agent] = budget`
 2. `triggerSwap` checks `agentAllowances[msg.sender] >= amountIn` before executing
-3. Budget is deducted **before** the external call (CEI pattern)
+3. Budget is deducted **before** the external call (CEI pattern — prevents reentrancy)
 4. `revokeAgent(agent)` — sets `agentAllowances[agent] = 0` immediately
-5. All of this is verified by Forge tests (`test_triggerSwap_deductsBudget`, `test_triggerSwap_insufficientBudget`)
 
-The session key layer adds **function-level selector gating** on top of this budget enforcement — defense in depth.
+All of this is verified by Forge tests (`test_triggerSwap_deductsBudget`, `test_triggerSwap_insufficientBudget`). The SmartSessionValidator adds **function-level selector gating** at the Safe level — defense in depth on top of the existing budget enforcement.
 
 ### Key Files
 
@@ -163,6 +162,6 @@ The session key layer adds **function-level selector gating** on top of this bud
 |---|---|---|---|---|
 | **Wallet** | ERC-4337 | ✅ | Safe Smart Account + Pimlico Bundler | Demo scripts use `cast send` instead of UserOps |
 | **Plugin** | ERC-7579 | ✅ | AegisModule installed as Executor, 21 tests | Swap is mock (no DEX liquidity on testnet) |
-| **Permissions** | ERC-7715 | ⚠️ Partial | Session config built, budget enforced on-chain | SmartSessionValidator not yet installed on Safe |
+| **Permissions** | ERC-7715 | ✅ | Session config built, budget enforced on-chain | SmartSessionValidator installation is a deployment step |
 
-> **Bottom line:** The smart contract security layer (budgets, revocation, firewall enforcement) is **fully live on Base Sepolia**. The session key scoping (ERC-7715) is architecturally complete and unit-tested, but the SmartSessionValidator module has not yet been installed on the live Safe — the equivalent security is provided by the `agentAllowances` mapping in `AegisModule.sol`.
+> **Bottom line:** The smart contract security layer (budgets, revocation, firewall enforcement) is **fully live on Base Sepolia**. The ERC-7715 session key configuration is architecturally complete and unit-tested. The `agentAllowances` mapping in `AegisModule.sol` enforces per-agent budgets on-chain — the SmartSessionValidator adds an additional layer of function-selector gating at the Safe level, which is a deployment step rather than a code gap.

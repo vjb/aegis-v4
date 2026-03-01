@@ -453,21 +453,5 @@ sequenceDiagram
     Safe-->>AM: SwapExecuted event emitted
 ```
 
----
 
-## Summary
 
-| # | Diagram | Type |
-|---|---|---|
-| 1 | System Context | `graph TD` |
-| 2 | Module Internal Structure | `graph LR` |
-| 3 | CRE Oracle Pipeline | `flowchart LR` |
-| 4 | Trade Lifecycle State Machine | `stateDiagram-v2` |
-| 5 | ERC-4337 Account Abstraction | `sequenceDiagram` |
-| 6 | Multi-Agent Firewall (Demo 2) | `flowchart TD` |
-| 7 | Security Zone Architecture | `graph TB` |
-| 8 | 8-Bit Risk Matrix | `graph LR` |
-| 9 | Agent Subscription Lifecycle | `sequenceDiagram` |
-| 10 | Base Sepolia Deployment Flow | `flowchart LR` |
-| 11 | Frontend Architecture | `graph TB` |
-| 12 | End-to-End Happy Path | `sequenceDiagram` |

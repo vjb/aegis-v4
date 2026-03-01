@@ -48,30 +48,73 @@ Think of it like issuing a corporate credit card to a new employee. The CEO (you
 ## V5 Architecture (Live on Base Sepolia)
 
 ```mermaid
-graph TD
-    Agent["🤖 AI Agent<br/>ERC-7715 session key — scoped to requestAudit + triggerSwap only"]
-    Bundler["📦 Pimlico Cloud Bundler<br/>gas estimation · paymaster · EntryPoint submission"]
-    EP["🔗 ERC-4337 EntryPoint 0.7<br/>on Base Sepolia"]
-    Safe["💰 Safe Smart Account<br/>ERC-7579 — AegisModule installed as Executor"]
-    CRE["🔮 Chainlink CRE DON<br/>GoPlus · BaseScan ConfidentialHTTP · GPT-4o + Llama-3"]
-    Swap["✅ triggerSwap → Swap executes"]
-    Deny["🔴 ClearanceDenied — capital preserved"]
+sequenceDiagram
+    participant Owner as 👤 Capital Allocator
+    participant Module as 🛡️ AegisModule.sol<br/>(ERC-7579 Executor)
+    participant Agent as 🤖 Subscribed Agent<br/>(ERC-7715 Session Key)
+    participant Bundler as 📦 Pimlico Bundler
+    participant Node as 🔮 Chainlink CRE DON
+    participant GoPlus as 📊 GoPlus Security
+    participant Enclave as 🔒 ConfidentialHTTPClient
+    participant BaseScan as 🔍 BaseScan
+    participant OpenAI as 🧠 OpenAI GPT-4o
+    participant Groq as ⚡ Groq Llama-3
 
-    Agent -->|"sendUserOperation()"| Bundler
-    Bundler -->|"handleOps"| EP
-    EP -->|"execute"| Safe
-    Safe -->|"requestAudit(token)"| CRE
-    CRE -->|"onReport(tradeId, riskScore)"| Safe
-    Safe -->|"riskScore == 0"| Swap
-    Safe -->|"riskScore > 0"| Deny
+    Owner->>Module: depositETH() — Fund Treasury
+    Owner->>Module: subscribeAgent(Agent, 0.05 ETH Budget)
+    Owner->>Module: setFirewallConfig("maxTax=5%, blockHoneypots=true, ...")
+    
+    Note over Agent: Agent detects alpha opportunity and initiates trade
 
-    style Agent fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-    style Bundler fill:#e0f2f1,stroke:#00796b,color:#004d40
-    style EP fill:#e0f2f1,stroke:#00796b,color:#004d40
-    style Safe fill:#fff3e0,stroke:#e65100,color:#bf360c
-    style CRE fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
-    style Swap fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style Deny fill:#ffebee,stroke:#c62828,color:#b71c1c
+    Agent->>Bundler: UserOp { callData: requestAudit(BRETT) }
+    Bundler->>Module: handleOps → execute → requestAudit(BRETT)
+    Note over Module: Emits AuditRequested + stored firewallConfig
+
+    Module-->>Node: AuditRequested event intercepted by CRE DON
+
+    Note over Node: The Parallel AI Audit Begins<br/>(firewallConfig injected into LLM prompts)
+
+    par GoPlus — On-Chain Security Flags
+        Node->>GoPlus: Fetch Token Security Data
+        GoPlus-->>Node: honeypot=0 · sell_restriction=0 · proxy=0 · verified=1
+    end
+
+    par Confidential Source Retrieval 🔒
+        Node->>Enclave: ConfidentialHTTPClient (API key sealed in DON)
+        Enclave->>BaseScan: Fetch verified Solidity source
+        BaseScan-->>Enclave: BrettToken.sol (52,963 chars)
+        Enclave-->>Node: Source code returned (key never exposed)
+    end
+
+    Note over Node: Source code + firewall rules<br/>injected into AI system prompt
+
+    par Confidential Multi-Model AI Consensus 🔒
+        Node->>Enclave: ConfidentialHTTPClient
+        Enclave->>OpenAI: Zero-day forensic audit (temp 0.0, JSON schema)
+        OpenAI-->>Enclave: { obfuscatedTax: false, privilegeEscalation: false }
+        Enclave-->>Node: GPT-4o score (key + prompt protected)
+    and
+        Node->>Enclave: ConfidentialHTTPClient
+        Enclave->>Groq: Independent verification (temp 0.0, JSON schema)
+        Groq-->>Enclave: { obfuscatedTax: false, privilegeEscalation: false }
+        Enclave-->>Node: Llama-3 score (key + prompt protected)
+    end
+
+    Note over Node: Bitwise Union of Fears<br/>If EITHER model flags a risk → bit is set
+
+    alt riskCode = 0 (ALL CLEAR ✅)
+        Node->>Module: onReport(tradeId, 0) via KeystoneForwarder
+        Note over Module: isApproved[BRETT] = true
+        Agent->>Bundler: UserOp { callData: triggerSwap(BRETT, 0.01 ETH, minOut) }
+        Bundler->>Module: handleOps → execute → triggerSwap
+        Note over Module: Check allowance ✓ · Deduct budget (CEI) · Consume clearance
+        Module->>Module: SwapExecuted event emitted — capital moved atomically
+    else riskCode > 0 (BLOCKED 🔴)
+        Node->>Module: onReport(tradeId, 36)
+        Note over Module: ClearanceDenied — funds stay safe<br/>triggerSwap() will revert with TokenNotCleared()
+    end
+    
+    Note over Owner: Absolute Sovereignty: Owner can revokeAgent() at any time — budget zeroed instantly
 ```
 
 ---
