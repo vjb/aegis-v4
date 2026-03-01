@@ -16,6 +16,17 @@ flowchart TD
     G --> I["Union of Fears\nblocked if EITHER flags risk"]
     H --> I
     I --> J(["onReport\nriskScore → AegisModule"])
+
+    style A fill:#fff3e0,stroke:#e65100,color:#bf360c
+    style B fill:#fffde7,stroke:#f9a825,color:#f57f17
+    style C fill:#fffde7,stroke:#f9a825,color:#f57f17
+    style D fill:#e0f7fa,stroke:#00838f,color:#006064
+    style E fill:#e0f7fa,stroke:#00838f,color:#006064
+    style F fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    style G fill:#e8eaf6,stroke:#283593,color:#1a237e
+    style H fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    style I fill:#ffebee,stroke:#c62828,color:#b71c1c
+    style J fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 ```
 
 ## Files

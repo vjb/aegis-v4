@@ -6,12 +6,14 @@ TDD-first test suite covering the full Aegis V5 stack: ERC-7579 module, CRE orac
 
 ```
 forge test --match-contract AegisModuleTest
-  ✅ 18 passed, 0 failed
+  ✅ 21 passed, 0 failed  (18 AegisModule + 3 template tests)
 
 pnpm exec jest
   ✅ 7 suites — 83 passed, 1 skipped
   ⏱  ~80s
 ```
+
+> 📊 See [`docs/sample_output/forge_tests.txt`](../docs/sample_output/forge_tests.txt) and [`docs/sample_output/jest_tests.txt`](../docs/sample_output/jest_tests.txt) for full output.
 
 ## Running Tests
 
@@ -30,7 +32,7 @@ forge test --match-contract AegisModuleTest -vv
 
 ## Solidity Suite (Forge)
 
-**`test/AegisModule.t.sol`** — 18 tests against `AegisModule.sol`:
+**`test/AegisModule.t.sol`** — 18 tests against `AegisModule.sol` (+ 3 template tests = 21 total):
 
 | # | Test | Assertion |
 |---|---|---|
@@ -49,7 +51,7 @@ forge test --match-contract AegisModuleTest -vv
 | 13 | `test_subscribeAgent_onlyOwner` | Non-owner → `NotOwner` |
 | 14 | `test_revokeAgent_blocksAudit` | Revoked agent → `NotAuthorized` on requestAudit |
 | 15 | `test_tradeId_increment` | tradeIds are sequential (0, 1, 2...) |
-| 16 | `test_killSwitch` | Emergency: all agent budgets zeroed |
+| 16 | `test_revokeAgent_zerosBudget` | `revokeAgent()` zeroes agent budget |
 | 17 | `test_depositETH` | `TreasuryDeposit` emitted, balance increases |
 | 18 | `test_withdrawETH` | `TreasuryWithdrawal` emitted, balance decreases |
 

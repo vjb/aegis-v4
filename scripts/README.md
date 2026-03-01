@@ -6,11 +6,11 @@ Operational scripts for the Aegis V5 Account Abstraction stack on Base Sepolia.
 
 | Script | Purpose |
 |---|---|
-| `demo_v5_setup.ps1` | Act 0: Infrastructure boot (Docker, WASM, connectivity) |
-| `demo_v5_master.ps1` | Acts 1–5: Full live E2E demo (bank → keys → audit → CRE → swap/revert) |
-| `demo_v5_cre.ps1` | Standalone CRE WASM showcase for Chainlink judges |
+| `demo_v5_setup.ps1` | Act 0: Infrastructure boot (Docker, WASM, connectivity) · [output](../docs/sample_output/demo_v5_setup_run.txt) |
+| `demo_v5_master.ps1` | Acts 1–7: Full live E2E demo (bank → keys → audit → CRE → swap/revert → budget → revoke) · [output](../docs/sample_output/demo_v5_master_run.txt) |
+| `demo_v5_cre.ps1` | Standalone CRE WASM showcase for Chainlink judges · [output](../docs/sample_output/demo_v5_cre_run.txt) |
 | `v5_setup_safe.ts` | Deploy Safe Smart Account + install AegisModule via Pimlico |
-| `v5_e2e_mock.ts` | Full 5-phase E2E test (Base Sepolia, mocked oracle callback) |
+| `v5_e2e_mock.ts` | Full 5-phase E2E test (Base Sepolia, mocked oracle callback) · [output](../docs/sample_output/erc4337_userop_run.txt) |
 | `v5_bot_config.ts` | ABI calldata builders for `requestAudit` and `triggerSwap` |
 | `v5_safe_config.ts` | Safe Smart Account configuration constants |
 | `v5_session_config.ts` | ERC-7715 session key scope configuration |
@@ -45,10 +45,10 @@ pnpm ts-node --transpile-only scripts/v5_setup_safe.ts
 ```
 
 **What it does:**
-1. Creates Safe Smart Account via Pimlico's `toSafeSmartAccount`
-2. Installs `AegisModule` as an ERC-7579 Executor module
-3. Subscribes an agent with a budget cap
-4. Prints the Safe address and module installation status
+1. Creates Safe Smart Account via Pimlico’s `toSafeSmartAccount`
+2. Deploys Safe via first UserOp (initCode)
+3. Calls `onInstall()` on AegisModule
+4. Prints the Safe address for `.env`
 
 ---
 

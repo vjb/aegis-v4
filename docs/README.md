@@ -21,6 +21,7 @@
 | [demo_v5_setup_run.txt](sample_output/demo_v5_setup_run.txt) | Infrastructure boot: Base Sepolia, Docker, WASM compilation |
 | [demo_v5_master_run.txt](sample_output/demo_v5_master_run.txt) | Full 7-act lifecycle with live CRE AI consensus |
 | [demo_v5_cre_run.txt](sample_output/demo_v5_cre_run.txt) | Raw CRE WASM execution against a known honeypot |
+| [erc4337_userop_run.txt](sample_output/erc4337_userop_run.txt) | **ERC-4337 proof:** Safe deploy → Pimlico UserOp → triggerSwap via AA |
 
 ## Demo Script Features
 
