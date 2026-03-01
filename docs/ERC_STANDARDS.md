@@ -134,8 +134,8 @@ Agent's Session Key ──→ requestAudit(tokenAddr)     ✅ Permitted
 
 | Component | Status | Why |
 |---|---|---|
-| SmartSessionValidator installation on Safe | ⚠️ Deployment step | The `SmartSessionValidator` module is built, configured, and unit-tested. Installing it on the live Safe is a single `installModule()` call — a deployment step, not a code gap. Budget enforcement is handled directly by the `agentAllowances` mapping in `AegisModule.sol`. |
-| Agent submitting UserOps via session signature | ⚠️ Demo uses owner key | In the demo scripts, the owner's key is used for `cast send` calls. In the E2E test, UserOps are submitted via Pimlico. In production, the agent would sign UserOps using its session credential. |
+| SmartSessionValidator installation on Safe | ⚠️ Chain infrastructure gap | The Safe 7579 adapter contracts (`Safe4337Module`, `ERC7579Launchpad`) and Rhinestone's `SmartSessionValidator` are **not deployed on Base Sepolia**. This is a chain infrastructure limitation — the session config is fully built, unit-tested, and ready to activate on any chain where these contracts exist (e.g., Ethereum Sepolia, Polygon). Budget enforcement is handled directly by the `agentAllowances` mapping in `AegisModule.sol`. |
+| Agent submitting UserOps via session signature | ⚠️ Demo uses owner key | Demo scripts use `cast send` (owner key). The E2E test submits real UserOps via Pimlico. In production on a supported chain, the agent would sign UserOps using its session credential. |
 
 ### On-Chain Budget Enforcement
 
