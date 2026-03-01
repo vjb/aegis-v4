@@ -166,6 +166,26 @@ export async function GET(req: NextRequest) {
                     }
                     if (cleaned.includes('[GoPlus]')) return; // absorb other GoPlus lines
 
+                    // ── Heimdall Decompiler phase ───────────────────────
+                    if (cleaned.match(/\[Heimdall\] (Decompiling|Starting|Fetching bytecode)/)) {
+                        send({ type: 'phase', phase: 'Heimdall — Bytecode Decompilation' });
+                        send({ type: 'static-analysis', source: 'Heimdall', status: 'pending' });
+                        return;
+                    }
+                    if (cleaned.match(/\[Heimdall\] (Decompilation complete|Found \d+ functions|Success)/)) {
+                        const funcMatch = cleaned.match(/Found (\d+) functions/);
+                        send({
+                            type: 'static-analysis', source: 'Heimdall', status: 'OK',
+                            functionsFound: funcMatch ? parseInt(funcMatch[1]) : undefined,
+                        });
+                        return;
+                    }
+                    if (cleaned.match(/\[Heimdall\] (Error|Failed|Timeout)/)) {
+                        send({ type: 'static-analysis', source: 'Heimdall', status: 'error', message: cleaned });
+                        return;
+                    }
+                    if (cleaned.includes('[Heimdall]')) return; // absorb other Heimdall lines
+
                     // ── BaseScan phase ────────────────────────────────────
                     if (cleaned.match(/\[BaseScan\] (ConfidentialHTTPClient|Using MOCK)/)) {
                         send({ type: 'static-analysis', source: 'BaseScan', status: 'pending' }); return;

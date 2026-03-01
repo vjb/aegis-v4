@@ -123,10 +123,17 @@ export default function OracleFeed({ isKilled, externalTrigger, onTriggerConsume
             case 'static-analysis': {
                 const isGoPlus = data.source?.includes('GoPlus');
                 const isBaseScan = data.source?.includes('BaseScan');
+                const isHeimdall = data.source?.includes('Heimdall');
                 if (isGoPlus) {
                     data.status === 'pending'
                         ? upsertPhase(runId, 'GoPlus — Static Analysis', 'running')
                         : (upsertPhase(runId, 'GoPlus — Static Analysis', 'done'), upsertPhase(runId, 'BaseScan — Contract Source', 'running'));
+                } else if (isHeimdall) {
+                    data.status === 'pending'
+                        ? upsertPhase(runId, 'Heimdall — Bytecode Decompilation', 'running')
+                        : data.status === 'error'
+                            ? upsertPhase(runId, 'Heimdall — Bytecode Decompilation', 'error')
+                            : upsertPhase(runId, 'Heimdall — Bytecode Decompilation', 'done');
                 } else if (isBaseScan) {
                     data.status === 'pending'
                         ? upsertPhase(runId, 'BaseScan — Contract Source', 'running')
@@ -194,7 +201,7 @@ export default function OracleFeed({ isKilled, externalTrigger, onTriggerConsume
                     )}
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="mono text-xs" style={{ color: 'var(--text-subtle)' }}>GoPlus · AI</span>
+                    <span className="mono text-xs" style={{ color: 'var(--text-subtle)' }}>GoPlus · AI · Heimdall</span>
                     {runs.length > 0 && (
                         <button onClick={() => setRuns([])} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 11 }} title="Clear feed">
                             <Trash2 className="w-3.5 h-3.5" /> Clear
