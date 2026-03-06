@@ -105,7 +105,7 @@
 | `cre workflow simulate` | [`demo_v5_cre_run.txt`](sample_output/demo_v5_cre_run.txt) |
 | ConfidentialHTTPClient | BaseScan + OpenAI + Groq keys sealed in enclave |
 | Multi-model consensus | GPT-4o + Llama-3 via `ConsensusAggregationByFields` |
-| On-chain callback | `onReport()` via KeystoneForwarder |
+| On-chain callback | `onReportDirect()` (owner relays CRE verdict; production uses `onReport()` via KeystoneForwarder) |
 
 ---
 

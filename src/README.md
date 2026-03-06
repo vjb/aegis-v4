@@ -15,7 +15,7 @@ The core smart contract — an ERC-7579 Type-2 Executor Module that installs ont
 | `subscribeAgent(address, uint256)` | Owner only | Registers an AI agent with an ETH budget cap |
 | `revokeAgent(address)` | Owner only | Instantly zeros an agent's budget and access |
 | `requestAudit(address)` | Owner or Agent | Submits a trade intent, emits `AuditRequested` for CRE DON |
-| `onReport(uint256, uint256)` | KeystoneForwarder only | CRE oracle callback — clears or denies token |
+| `onReport(bytes, bytes)` | KeystoneForwarder only | Production CRE callback — clears or denies token. Demo uses `onReportDirect(uint256, uint256)` (owner relay) |
 | `onReportDirect(uint256, uint256)` | Owner only | Demo/testing callback (simulates oracle) |
 | `triggerSwap(address, uint256, uint256)` | Owner or Agent | Executes swap if token is cleared and budget allows |
 | `setFirewallConfig(string)` | Owner only | Updates the dynamic firewall policy |
