@@ -82,14 +82,14 @@
 
 | Standard | Implementation | Evidence |
 |---|---|---|
-| **ERC-7579** | AegisModule as Executor | `src/AegisModule.sol` — `onInstall`, `onUninstall`, `isModuleType` |
+| **ERC-7579** | AegisModule implements Executor interface | `src/AegisModule.sol` — inherits `ERC7579ExecutorBase`, implements `onInstall`, `onUninstall`, `isModuleType` |
 | **ERC-4337** | Smart Account via Safe | UserOps relayed through Pimlico bundler |
 
 
 | Layer | Standard | On-Chain? | What's Real | What's Simulated |
 |---|---|---|---|---|
 | **Wallet** | ERC-4337 | ✅ | Safe Smart Account + Pimlico Bundler | All `requestAudit` + `triggerSwap` via ERC-4337 UserOps in master demo |
-| **Module** | ERC-7579 | ✅ | AegisModule installed on Safe, all functions live | — |
+| **Module** | ERC-7579 | ✅ | Contract implements full ERC-7579 executor interface | Deployed standalone for demo (not installed on Safe via `installModule`) |
 
 
 ---
