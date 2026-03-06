@@ -157,12 +157,12 @@ if ([string]::IsNullOrWhiteSpace($TxHash)) {
         "AuditRequested event on Base Sepolia.",
         "",
         "In production, an AI agent would submit this via",
-        "a Pimlico-bundled ERC-4337 UserOperation.",
+        "a Pimlico-bundled Session Key UserOperation (ERC-7715).",
         "Here, we simulate it with a direct cast send."
     ) -Prompt "Generate the on-chain AuditRequested event"
 
     Write-Host "`n[Scene 2] Generating live 'AuditRequested' event..." -ForegroundColor Yellow
-    Info "Simulating Agent NOVA routing ERC-4337 intent through Pimlico..."
+    Info "Simulating Agent NOVA routing Session Key intent through Pimlico..."
     
     $CastCommand = "cast send $ModuleAddr `"requestAudit(address)`" $TargetToken --rpc-url $RPC --private-key <PRIVATE_KEY>"
     Write-Host "`n> $CastCommand" -ForegroundColor DarkMagenta

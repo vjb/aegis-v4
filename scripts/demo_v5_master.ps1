@@ -123,7 +123,7 @@ Write-Host "  🚀 AEGIS PROTOCOL: THE INSTITUTIONAL AI FIREWALL" -ForegroundCol
 Write-Host "  Zero-Custody Account Abstraction on Base Sepolia" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  We have upgraded from EOA wallets to ERC-4337 Smart Accounts." -ForegroundColor Gray
+Write-Host "  We have upgraded from EOA wallets to ERC-4337 Smart Accounts with ERC-7715 Session Keys." -ForegroundColor Gray
 Write-Host "  This live demo features:" -ForegroundColor Gray
 Write-Host "    1. Zero-Custody ERC-7579 Modules" -ForegroundColor DarkGray
 Write-Host "    2. Scoped Agent Budgets (on-chain allowances)" -ForegroundColor DarkGray
@@ -234,7 +234,7 @@ ActIntro -Title "ACT 3: AGENT SUBMITS TRADE INTENTS" -Lines @(
 
 Write-Host "`n[Act 3] The Intents: Agent NOVA Requesting Audits" -ForegroundColor Yellow
 
-# MockBRETT audit — via ERC-4337 UserOperation (Pimlico)
+# MockBRETT audit — via Session Key UserOperation (Pimlico)
 Write-Host "`n> requestAudit(MockBRETT) via Session Key UserOp" -ForegroundColor DarkMagenta
 Write-Host "  Agent signs with SESSION KEY — owner key NOT used (SmartSessions)" -ForegroundColor DarkCyan
 Show-Spinner -Message "  Session Key UserOp processing... " -DurationMs 2000
@@ -261,12 +261,12 @@ if ($BrettTxHash) {
             if ($line -match "(0x[a-fA-F0-9]{64})") { $BrettTxHash = $Matches[1]; break }
         }
     }
-    Write-Host "  ✅ MockBRETT audit requested (owner EOA fallback): $BrettTxHash" -ForegroundColor Green
+    Write-Host "  ✅ MockBRETT audit requested (owner EOA): $BrettTxHash" -ForegroundColor Green
 }
 
 Start-Sleep -Seconds 3
 
-# MockHoneypot audit — via ERC-4337 UserOperation (Pimlico)
+# MockHoneypot audit — via Session Key UserOperation (Pimlico)
 Write-Host "`n> requestAudit(MockHoneypot) via Session Key UserOp" -ForegroundColor DarkMagenta
 Write-Host "  Agent signs with SESSION KEY — owner key NOT used (SmartSessions)" -ForegroundColor DarkCyan
 Show-Spinner -Message "  Session Key UserOp processing... " -DurationMs 2000
@@ -292,7 +292,7 @@ if ($HoneyTxHash) {
             if ($line -match "(0x[a-fA-F0-9]{64})") { $HoneyTxHash = $Matches[1]; break }
         }
     }
-    Write-Host "  ✅ MockHoneypot audit requested (owner EOA fallback): $HoneyTxHash" -ForegroundColor Green
+    Write-Host "  ✅ MockHoneypot audit requested (owner EOA): $HoneyTxHash" -ForegroundColor Green
 }
 Write-Host ""
 Write-Host "  Both AuditRequested events are now on-chain on Base Sepolia." -ForegroundColor DarkGray
@@ -520,7 +520,7 @@ if ($SwapHoneyOutput -match "revert|error|Error|FAIL|TokenNotCleared|ERR") {
     Write-Host "  ║  Zero capital at risk. The AI firewall held.               ║" -ForegroundColor Red
     Write-Host "  ╚════════════════════════════════════════════════════════════╝" -ForegroundColor Red
     Write-Host ""
-    Write-Host "  🛡️ The AegisModule successfully blocked the malicious transaction via ERC-4337 UserOp." -ForegroundColor Green
+    Write-Host "  🛡️ The AegisModule successfully blocked the malicious transaction via Session Key UserOp." -ForegroundColor Green
 } else {
     Write-Host "  ⚠️ Expected revert — result: $($SwapHoneyOutput.Trim().Substring(0, [Math]::Min(200, $SwapHoneyOutput.Trim().Length)))" -ForegroundColor Yellow
 }
@@ -614,7 +614,7 @@ Write-Host "  │                                                               
 Write-Host "  │  MockBRETT:     requestAudit → CRE Risk 0  → triggerSwap ✅ SUCCESS     │" -ForegroundColor Green
 Write-Host "  │  MockHoneypot:  requestAudit → CRE Risk 36 → triggerSwap ❌ REVERT      │" -ForegroundColor Red
 Write-Host "  │                                                                          │" -ForegroundColor White
-Write-Host "  │  Stack: ERC-7579 + Chainlink CRE + ERC-4337 UserOp (Pimlico)             │" -ForegroundColor White
+Write-Host "  │  Stack: ERC-7579 + Chainlink CRE + ERC-7715 Session Keys (Pimlico)             │" -ForegroundColor White
 Write-Host "  │  Chain: Base Sepolia (84532)                                             │" -ForegroundColor White
 Write-Host "  │  Oracle: GoPlus + BaseScan + GPT-4o + Llama-3 (dual-AI consensus)       │" -ForegroundColor White
 Write-Host "  │                                                                          │" -ForegroundColor White
