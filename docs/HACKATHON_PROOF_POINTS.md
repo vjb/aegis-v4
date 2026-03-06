@@ -160,7 +160,7 @@
 
 | Document | Content |
 |---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | 7 Mermaid diagrams, ERC stack, risk matrix |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, ERC stack, risk matrix |
 | [`CONFIDENTIAL_HTTP.md`](CONFIDENTIAL_HTTP.md) | Privacy track deep-dive |
 | [`HEIMDALL_PIPELINE.md`](HEIMDALL_PIPELINE.md) | Bytecode decompilation pipeline |
 | [`AI_PROMPT_CATALOG.md`](AI_PROMPT_CATALOG.md) | All 3 AI prompts with templates |

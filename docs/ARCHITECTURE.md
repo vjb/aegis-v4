@@ -1,12 +1,10 @@
 # Aegis Protocol V5 — System Architecture
 
-> 7 Mermaid diagrams covering the core Aegis V5 security stack.
-
 [🏠 Back to Main README](../README.md)
 
 ---
 
-## 1. System Context
+## System Context
 
 ```mermaid
 graph TD
@@ -15,14 +13,13 @@ graph TD
     Aegis["🛡️ AegisModule<br/>ERC-7579 Executor on Smart Account"]
     CRE["🔗 Chainlink CRE DON<br/>WASM oracle · GoPlus · AI models"]
     SA["💰 Smart Account - Safe<br/>Holds ALL capital"]
-    Swap["🔄 Simulated Swap<br/>ETH transfer + SwapExecuted event"]
+    Swap["🔄 Simulated Swap<br/>Budget deducted + SwapExecuted event"]
 
-    Owner -->|"install · budget · revoke"| Aegis
+    Owner -->|"deposit · budget · revoke"| Aegis
     Agent -->|"requestAudit(token)"| Aegis
     Aegis -->|"emits AuditRequested"| CRE
-    CRE -->|"onReport(tradeId, riskScore)"| Aegis
-    Aegis -->|"executeFromExecutor() on clearance"| SA
-    SA -->|"triggerSwap() — simulated"| Swap
+    CRE -->|"onReportDirect(tradeId, riskScore)"| Aegis
+    Aegis -->|"triggerSwap() on clearance"| Swap
 
     style Owner fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style Agent fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
@@ -34,7 +31,7 @@ graph TD
 
 ---
 
-## 2. CRE Oracle Pipeline
+## CRE Oracle Pipeline
 
 ```mermaid
 flowchart LR
@@ -56,7 +53,7 @@ flowchart LR
         AI3["Union of flags<br/>bits 4–7: tax · priv · extCall · bomb"]
     end
 
-    REPORT(["onReport(tradeId, riskCode)<br/>via KeystoneForwarder"])
+    REPORT(["onReportDirect(tradeId, riskCode)<br/>owner relay (production: KeystoneForwarder)"])
 
     EVENT --> Phase1 --> GP1 --> GP2
     GP2 --> Phase2 --> BS1 --> BS2
@@ -76,7 +73,7 @@ flowchart LR
 
 ---
 
-## 3. Trade Lifecycle State Machine
+## Trade Lifecycle State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -95,7 +92,7 @@ stateDiagram-v2
 
 ---
 
-## 4. ERC-4337 Account Abstraction Flow
+## ERC-4337 Account Abstraction Flow
 
 ```mermaid
 sequenceDiagram
@@ -109,92 +106,24 @@ sequenceDiagram
     Bot->>Bundler: UserOp { callData: requestAudit(BRETT) }
     Bundler->>EP: handleOps
     EP->>Safe: validateUserOp ✓
-    EP->>Safe: execute
     Safe->>AM: requestAudit(BRETT)
     AM-->>CRE: emit AuditRequested
 
     Note over CRE: GoPlus + BaseScan + AI audit
 
-    CRE->>AM: onReport(id, 0) via KeystoneForwarder
+    Note over AM: Owner calls onReportDirect(id, 0)
     AM->>AM: isApproved[BRETT] = true
 
     Bot->>Bundler: UserOp { callData: triggerSwap(BRETT, 0.01 ETH) }
     Bundler->>EP: handleOps
-    EP->>Safe: execute
     Safe->>AM: triggerSwap
-    AM->>AM: check allowance ✓ · consume clearance (CEI)
-    AM->>Safe: executeFromExecutor
-    Safe-->>AM: SwapExecuted event emitted
+    AM->>AM: check allowance ✓ · deduct budget · consume clearance (CEI)
+    AM-->>AM: SwapExecuted event (simulated on testnet)
 ```
 
 ---
 
-## 5. Agent Subscription Lifecycle
-
-```mermaid
-sequenceDiagram
-    participant Owner as 👤 Owner
-    participant AM as 🛡️ AegisModule
-    participant Agent as 🤖 AI Agent
-    participant Safe as 💰 Safe
-
-    Owner->>AM: depositETH() — 0.1 ETH
-    Owner->>AM: subscribeAgent(agentAddr, 0.05 ETH)
-    AM-->>Owner: emit AgentSubscribed
-
-    Agent->>AM: requestAudit(BRETT)
-    Note over AM: CRE oracle runs...
-    AM->>AM: isApproved[BRETT] = true
-
-    Agent->>AM: triggerSwap(BRETT, 0.01 ETH)
-    AM->>AM: agentAllowances -= 0.01 ETH
-    AM->>Safe: triggerSwap() — simulated
-    Note right of AM: Budget remaining: 0.04 ETH
-
-    Owner->>AM: revokeAgent(agentAddr)
-    AM->>AM: agentAllowances[agentAddr] = 0
-    AM-->>Owner: emit AgentRevoked
-```
-
----
-
-## 6. End-to-End Happy Path
-
-```mermaid
-sequenceDiagram
-    participant Agent as 🤖 AI Agent
-    participant AM as 🛡️ AegisModule
-    participant GP as 📊 GoPlus API
-    participant BS as 🔍 BaseScan
-    participant LLM as 🧠 GPT-4o + Llama-3
-    participant KF as 🔑 KeystoneForwarder
-    participant Safe as 💰 Smart Account
-
-    Agent->>AM: requestAudit(BRETT)
-    AM-->>GP: emit AuditRequested → CRE activates
-
-    GP->>AM: honeypot=0 · sell_tax=0 · verified=1
-    Note over AM: Phase 1 ✅ GoPlus
-
-    BS-->>AM: 52,963 chars BrettToken.sol
-    Note over AM: Phase 2 ✅ BaseScan (ConfidentialHTTP)
-
-    LLM-->>AM: tax=false · priv=false · risk=0 (both models)
-    Note over AM: Phase 3 ✅ AI Consensus
-
-    KF->>AM: onReport(tradeId, riskCode=0)
-    AM->>AM: isApproved[BRETT] = true
-
-    Agent->>AM: triggerSwap(BRETT, 0.01 ETH)
-    AM->>AM: consume clearance (CEI anti-replay)
-    AM->>Safe: executeFromExecutor
-    Safe->>Safe: triggerSwap() — simulated
-    Safe-->>AM: SwapExecuted event emitted
-```
-
----
-
-## 7. Heimdall Bytecode Fallback Pipeline *(Experimental)*
+## Heimdall Bytecode Fallback Pipeline *(Experimental)*
 
 > **Status: Standalone experimental demo.** This pipeline is not yet wired into the live CRE oracle. It demonstrates how Aegis could extend coverage to unverified contracts.
 

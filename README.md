@@ -186,7 +186,7 @@ cd aegis-frontend && npm run dev
 | Document | Content |
 |---|---|
 | 🏆 [**Hackathon Proof Points**](docs/HACKATHON_PROOF_POINTS.md) | Track requirement mappings, test evidence, on-chain contracts |
-| 📖 [**Architecture**](docs/ARCHITECTURE.md) | 7 Mermaid diagrams — CRE pipeline, trade lifecycle, ERC-4337 flow |
+| 📖 [**Architecture**](docs/ARCHITECTURE.md) | Mermaid diagrams — CRE pipeline, trade lifecycle, ERC-4337 flow |
 | 🔐 [**Confidential HTTP**](docs/CONFIDENTIAL_HTTP.md) | Privacy track — how API keys are sealed inside DON |
 | 🧠 [**AI Prompt Catalog**](docs/AI_PROMPT_CATALOG.md) | All AI prompts with templates and design rationale |
 | 🎬 [**Demo Guide**](docs/DEMO_GUIDE.md) | How to run demos + sample output |

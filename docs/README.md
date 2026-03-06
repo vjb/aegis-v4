@@ -8,7 +8,7 @@
 |---|---|
 | [HACKATHON_PROOF_POINTS.md](HACKATHON_PROOF_POINTS.md) | **Hackathon judges start here.** All 5 track requirement mappings with evidence |
 | [DEMO_GUIDE.md](DEMO_GUIDE.md) | How to run the V5 demo scripts on Base Sepolia |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture — 7 Mermaid diagrams (ERC-7579 → CRE → ERC-4337) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture with Mermaid diagrams (ERC-7579 → CRE → ERC-4337) |
 | [CONFIDENTIAL_HTTP.md](CONFIDENTIAL_HTTP.md) | Privacy track — how `ConfidentialHTTPClient` protects all API keys and source code |
 | [HEIMDALL_PIPELINE.md](HEIMDALL_PIPELINE.md) | Experimental: bytecode decompilation for unverified contracts (standalone demo) |
 | [AI_PROMPT_CATALOG.md](AI_PROMPT_CATALOG.md) | All 3 AI prompts with templates, design rationale, and output format |
