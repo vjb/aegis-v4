@@ -1,4 +1,4 @@
-# 🔬 Heimdall Bytecode Decompilation Pipeline
+# Heimdall Bytecode Decompilation Pipeline
 
 > **Status:** Standalone experimental demo · Proves Aegis can audit unverified contracts via bytecode alone
 

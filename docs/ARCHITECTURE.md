@@ -1,6 +1,6 @@
 # Aegis Protocol V5 — System Architecture
 
-[🏠 Back to Main README](../README.md)
+[Back to Main README](../README.md)
 
 ---
 

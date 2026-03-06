@@ -1,8 +1,8 @@
-# 🎬 Aegis Protocol V5 — Demo Guide
+# Aegis Protocol V5 — Demo Guide
 
 > **Four demo scripts with interactive scene introductions. All live on Base Sepolia.**
 >
-> 💡 **Recording tip:** Run all scripts with `-Interactive` — each act pauses with a bordered intro box before executing. Press ENTER to advance.
+> **Recording tip:** Run all scripts with `-Interactive` — each act pauses with a bordered intro box before executing. Press ENTER to advance.
 
 ---
 

@@ -1,4 +1,4 @@
-# 🧠 Aegis Protocol — AI Prompt Catalog
+# Aegis Protocol — AI Prompt Catalog
 
 > All LLM prompts used throughout Aegis, their purpose, and where they live in source code.
 

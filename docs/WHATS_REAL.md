@@ -1,12 +1,12 @@
 # What's Real — Aegis Protocol V5
 
-[🏠 Back to Main README](../README.md)
+[Back to Main README](../README.md)
 
 > **This document exists because we believe judges deserve honesty.** Everything below is verifiable on-chain or in the source code.
 
 ---
 
-## ✅ What's Real
+## What's Real
 
 | Feature | Proof | Verifiable? |
 |---|---|---|
@@ -23,7 +23,7 @@
 
 ---
 
-## ⚠️ What's Simulated (and Why)
+## What's Simulated (and Why)
 
 Every item below is a **platform or infrastructure limitation**, not missing code.
 

@@ -1,4 +1,4 @@
-# 🔐 Confidential HTTP — Privacy-Preserving Oracle Design
+# Confidential HTTP — Privacy-Preserving Oracle Design
 
 Aegis Protocol uses Chainlink's `ConfidentialHTTPClient` throughout the CRE oracle pipeline. This document explains what that means, why it matters, and where it applies.
 

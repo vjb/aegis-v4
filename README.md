@@ -1,4 +1,4 @@
-# 🛡️ Aegis Protocol V5: The Institutional AI Firewall
+# Aegis Protocol V5: The Institutional AI Firewall
 
 > **ERC-7579 Module · ERC-7715 Session Keys · Chainlink CRE Oracle · ERC-4337 Account Abstraction**
 >
@@ -12,7 +12,7 @@
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Pimlico%20bundler-purple)](scripts/v5_e2e_mock.ts)
 [![Tests](https://img.shields.io/badge/tests-all%20passing-brightgreen)](test/)
 
-🎬 **[Watch the Demo Video](#)** · 📖 **[Architecture](docs/ARCHITECTURE.md)** · 🔐 **[Confidential HTTP](docs/CONFIDENTIAL_HTTP.md)** · 🏆 **[Hackathon Proof Points](docs/HACKATHON_PROOF_POINTS.md)**
+**[Watch the Demo Video](#)** · **[Architecture](docs/ARCHITECTURE.md)** · **[Confidential HTTP](docs/CONFIDENTIAL_HTTP.md)** · **[Hackathon Proof Points](docs/HACKATHON_PROOF_POINTS.md)**
 
 ### Verified on Base Sepolia (Chain ID 84532)
 
@@ -25,7 +25,7 @@
 
 ---
 
-## 🛑 Stop Giving Trading Bots Your Private Keys.
+## Stop Giving Trading Bots Your Private Keys.
 
 AI trading bots are becoming mainstream. The problem? You have to hand over your private keys. If the bot gets it wrong — honeypot token, scam contract, compromised API — your money is gone.
 
@@ -33,11 +33,11 @@ AI trading bots are becoming mainstream. The problem? You have to hand over your
 
 ### How it works:
 
-- 🔐 **You Keep the Keys:** Capital lives in a Safe Smart Account. You retain absolute custody.
-- 💼 **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain ETH budget. Exceeding it reverts.
-- 🔑 **Session Keys:** Agent submits UserOps via ERC-7715 session key — owner's private key never used. ([proof](docs/sample_output/session_key_demo.txt))
-- 🛡️ **The AI Firewall:** Chainlink DON runs dual LLMs in parallel, forensically auditing target tokens for zero-day scams.
-- ⚡ **Per-Trade AI Clearance:** Cleared → swap executes. Failed → `TokenNotCleared()` reverts on-chain. **Zero capital at risk.**
+- **You Keep the Keys:** Capital lives in a Safe Smart Account. You retain absolute custody.
+- **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain ETH budget. Exceeding it reverts.
+- **Session Keys:** Agent submits UserOps via ERC-7715 session key — owner's private key never used. ([proof](docs/sample_output/session_key_demo.txt))
+- **The AI Firewall:** Chainlink DON runs dual LLMs in parallel, forensically auditing target tokens for zero-day scams.
+- **Per-Trade AI Clearance:** Cleared → swap executes. Failed → `TokenNotCleared()` reverts on-chain. **Zero capital at risk.**
 
 > **Testnet note:** On Base Sepolia, `triggerSwap` emits `SwapExecuted` but does not route through a real DEX (no liquidity). Production Uniswap V3 code is included in the contract, commented out. Budget enforcement and clearance checks are fully real.
 
@@ -103,7 +103,7 @@ sequenceDiagram
 
 ---
 
-## 📊 The 8-Bit Risk Matrix
+## The 8-Bit Risk Matrix
 
 | Bit | Flag | Source |
 |---|---|---|
@@ -120,7 +120,7 @@ The oracle uses a bitwise **"Union of Fears"** — if *either* AI model flags a 
 
 ---
 
-## 🎬 Demo Scripts
+## Demo Scripts
 
 ```powershell
 .\scripts\demo_v5_setup.ps1 -Interactive    # Infrastructure boot (~2 min)
@@ -132,7 +132,7 @@ The oracle uses a bitwise **"Union of Fears"** — if *either* AI model flags a 
 
 ---
 
-## 🔗 Files Using Chainlink
+## Files Using Chainlink
 
 > **Hackathon requirement:** The README must link to all files that use Chainlink.
 
@@ -154,7 +154,7 @@ The oracle uses a bitwise **"Union of Fears"** — if *either* AI model flags a 
 
 ---
 
-## ⚡ Quickstart
+## Quickstart
 
 ```bash
 # 1. Install
@@ -179,7 +179,7 @@ cd aegis-frontend && npm run dev
 
 ---
 
-## 📋 AegisModule Function Reference
+## AegisModule Function Reference
 
 | Function | Access | Purpose |
 |---|---|---|
@@ -194,28 +194,28 @@ cd aegis-frontend && npm run dev
 
 ---
 
-## 📚 Deep Dives
+## Deep Dives
 
 | Document | Content |
 |---|---|
-| 🏆 [**Hackathon Proof Points**](docs/HACKATHON_PROOF_POINTS.md) | Track requirement mappings, test evidence, on-chain contracts |
-| 📖 [**Architecture**](docs/ARCHITECTURE.md) | Mermaid diagrams — CRE pipeline, trade lifecycle, ERC-4337 flow |
-| 🔐 [**Confidential HTTP**](docs/CONFIDENTIAL_HTTP.md) | Privacy track — how API keys are sealed inside DON |
-| 🧠 [**AI Prompt Catalog**](docs/AI_PROMPT_CATALOG.md) | All AI prompts with templates and design rationale |
-| 🎬 [**Demo Guide**](docs/DEMO_GUIDE.md) | How to run demos + sample output |
-| 🖥️ [**Frontend**](aegis-frontend/README.md) | Next.js dashboard — agents, firewall toggles, oracle feed, chat |
-| 🔬 [**Heimdall Pipeline**](docs/HEIMDALL_PIPELINE.md) | *(Experimental)* Bytecode decompilation for unverified contracts |
-| 📝 [**Lessons Learned**](docs/LESSONS_LEARNED.md) | Engineering ledger |
+| [**Hackathon Proof Points**](docs/HACKATHON_PROOF_POINTS.md) | Track requirement mappings, test evidence, on-chain contracts |
+| [**Architecture**](docs/ARCHITECTURE.md) | Mermaid diagrams — CRE pipeline, trade lifecycle, ERC-4337 flow |
+| [**Confidential HTTP**](docs/CONFIDENTIAL_HTTP.md) | Privacy track — how API keys are sealed inside DON |
+| [**AI Prompt Catalog**](docs/AI_PROMPT_CATALOG.md) | All AI prompts with templates and design rationale |
+| [**Demo Guide**](docs/DEMO_GUIDE.md) | How to run demos + sample output |
+| [**Frontend**](aegis-frontend/README.md) | Next.js dashboard — agents, firewall toggles, oracle feed, chat |
+| [**Heimdall Pipeline**](docs/HEIMDALL_PIPELINE.md) | *(Experimental)* Bytecode decompilation for unverified contracts |
+| [**Lessons Learned**](docs/LESSONS_LEARNED.md) | Engineering ledger |
 
 ---
 
-## 🤖 AI Acknowledgment
+## AI Acknowledgment
 
 **Protocol:** GPT-4o + Llama-3 (CRE WASM) · **Development:** Google Antigravity, Gemini, Claude · **Media:** NotebookLM, Veo 3
 
 ---
 
-## 🔗 References
+## References
 
 - [Chainlink CRE Docs](https://docs.chain.link/cre) · [Rhinestone ModuleKit](https://docs.rhinestone.wtf) · [ERC-7579](https://eips.ethereum.org/EIPS/eip-7579)
 - [Smart Contract](src/AegisModule.sol) · [CRE Oracle](cre-node/aegis-oracle.ts)
