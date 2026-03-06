@@ -243,7 +243,8 @@ $AuditBrettOutput = pnpm ts-node --transpile-only scripts/v5_audit_userop.ts $Br
 
 $BrettTxHash = ""
 foreach ($line in $AuditBrettOutput -split "`n") {
-    if ($line -match "^(0x[a-fA-F0-9]{64})$") { $BrettTxHash = $Matches[1]; break }
+    $trimmed = $line.Trim()
+    if ($trimmed -match "^(0x[a-fA-F0-9]{64})$") { $BrettTxHash = $Matches[1]; break }
 }
 
 if ($BrettTxHash) {
@@ -274,7 +275,8 @@ $AuditHoneyOutput = pnpm ts-node --transpile-only scripts/v5_audit_userop.ts $Ho
 
 $HoneyTxHash = ""
 foreach ($line in $AuditHoneyOutput -split "`n") {
-    if ($line -match "^(0x[a-fA-F0-9]{64})$") { $HoneyTxHash = $Matches[1]; break }
+    $trimmed = $line.Trim()
+    if ($trimmed -match "^(0x[a-fA-F0-9]{64})$") { $HoneyTxHash = $Matches[1]; break }
 }
 
 if ($HoneyTxHash) {
@@ -446,7 +448,8 @@ $SwapBrettOutput = pnpm ts-node --transpile-only scripts/v5_swap_userop.ts $Bret
 
 $SwapBrettHash = ""
 foreach ($line in $SwapBrettOutput -split "`n") {
-    if ($line -match "^(0x[a-fA-F0-9]{64})$") { $SwapBrettHash = $Matches[1]; break }
+    $trimmed = $line.Trim()
+    if ($trimmed -match "^(0x[a-fA-F0-9]{64})$") { $SwapBrettHash = $Matches[1]; break }
 }
 
 if ($SwapBrettHash) {
