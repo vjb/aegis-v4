@@ -6,7 +6,7 @@
 
 **Convergence Hackathon Tracks:** Risk & Compliance · CRE & AI · DeFi & Tokenization · Privacy · Autonomous Agents
 
-[![CRE Live](https://img.shields.io/badge/chainlink%20CRE-live%20on%20Base%20Sepolia-blue)](cre-node/)
+[![CRE](https://img.shields.io/badge/chainlink%20CRE-simulated%20on%20Base%20Sepolia-blue)](cre-node/)
 [![ERC-7579](https://img.shields.io/badge/ERC--7579-executor-orange)](src/AegisModule.sol)
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Pimlico%20bundler-purple)](scripts/v5_e2e_mock.ts)
 [![Tests](https://img.shields.io/badge/tests-all%20passing-brightgreen)](test/)
@@ -36,6 +36,8 @@ AI trading bots are becoming mainstream. The problem? You have to hand over your
 - 💼 **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain allowance scoped to `requestAudit()` and `triggerSwap()`.
 - 🛡️ **The AI Firewall:** Chainlink DON runs dual LLMs in parallel, forensically auditing target tokens for zero-day scams.
 - ⚡ **Just-In-Time Execution:** Cleared → swap executes atomically. Failed → `TokenNotCleared()` reverts. **Zero capital at risk.**
+
+> **Testnet note:** On Base Sepolia, `triggerSwap` emits `SwapExecuted` but does not route through a real DEX (no liquidity). Production Uniswap V3 code is included in the contract, commented out. Budget enforcement and clearance checks are fully real.
 
 ---
 
@@ -74,11 +76,11 @@ sequenceDiagram
     Note over Node: Bitwise Union of Fears<br/>If EITHER model flags a risk → bit is set
 
     alt riskCode = 0 (ALL CLEAR ✅)
-        Node->>Module: onReport(tradeId, 0)
+        Node->>Module: onReportDirect(tradeId, 0)
         Agent->>Bundler: UserOp { callData: triggerSwap(BRETT, 0.01 ETH) }
         Bundler->>Module: handleOps → triggerSwap ✅
     else riskCode > 0 (BLOCKED 🔴)
-        Node->>Module: onReport(tradeId, 36)
+        Node->>Module: onReportDirect(tradeId, 36)
         Note over Module: triggerSwap() reverts: TokenNotCleared()
     end
     
@@ -102,7 +104,7 @@ sequenceDiagram
 | 6 | External call risk | AI |
 | 7 | Logic bomb | AI |
 
-The oracle uses a bitwise **"Union of Fears"** — if *either* AI model flags a risk, the corresponding bit is set. Each bit is also gated by the owner's on-chain firewall config.
+The oracle uses a bitwise **"Union of Fears"** — if *either* AI model flags a risk, the corresponding bit is set. The owner's firewall config is stored on-chain via `setFirewallConfig()` and emitted in every `AuditRequested` event; the CRE oracle currently uses sensible defaults rather than parsing it dynamically.
 
 ---
 

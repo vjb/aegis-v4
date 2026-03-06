@@ -42,7 +42,7 @@
 |---|---|
 | `cre simulate` execution | `docker exec cre workflow simulate` with real Base Sepolia tx |
 | On-chain write on CRE-supported testnet | `requestAudit()` + `onReportDirect()` + `triggerSwap()` on Base Sepolia |
-| Agent-driven execution | AI agent submits UserOps via Pimlico bundler — no human in the loop |
+| Agent-driven execution | AI agent submits UserOps via Pimlico bundler; `onReportDirect` is owner-relayed (production: KeystoneForwarder) |
 | BYOA (Bring Your Own Agent) | Any external agent can be subscribed via `subscribeAgent(address, uint256)` |
 
 ### DeFi & Tokenization
@@ -51,7 +51,7 @@
 |---|---|
 | Novel DeFi primitive | JIT Smart Treasury — AI-gated, budget-enforced token execution |
 | CRE as DeFi orchestration layer | Multi-model AI audit governs per-token clearance for swap execution |
-| Live ERC-20 balance changes | Cleared swaps produce real, verifiable token balance changes on Base Sepolia |
+| Live budget enforcement | ETH budget deductions are verifiable on-chain after `triggerSwap` (swap itself is simulated on testnet — no DEX liquidity) |
 
 ---
 
@@ -160,7 +160,7 @@
 
 | Document | Content |
 |---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | 13 Mermaid diagrams, ERC stack, risk matrix |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | 7 Mermaid diagrams, ERC stack, risk matrix |
 | [`CONFIDENTIAL_HTTP.md`](CONFIDENTIAL_HTTP.md) | Privacy track deep-dive |
 | [`HEIMDALL_PIPELINE.md`](HEIMDALL_PIPELINE.md) | Bytecode decompilation pipeline |
 | [`AI_PROMPT_CATALOG.md`](AI_PROMPT_CATALOG.md) | All 3 AI prompts with templates |
