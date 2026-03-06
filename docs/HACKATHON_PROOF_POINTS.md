@@ -50,7 +50,7 @@
 
 | Requirement | Implementation |
 |---|---|
-| Novel DeFi primitive | JIT Smart Treasury — AI-gated, budget-enforced token execution |
+| Novel DeFi primitive | AI-Gated Smart Treasury — per-trade AI clearance, budget-enforced token execution |
 | CRE as DeFi orchestration layer | Multi-model AI audit governs per-token clearance for swap execution |
 | Live budget enforcement | ETH budget deductions are verifiable on-chain after `triggerSwap` (swap itself is simulated on testnet — no DEX liquidity) |
 

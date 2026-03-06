@@ -282,7 +282,7 @@ contract AegisModule is ERC7579ExecutorBase {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  STEP 3 — JIT SWAP (simulated on Base Sepolia)
+    //  STEP 3 — AUDITED SWAP (simulated on Base Sepolia)
     // ═══════════════════════════════════════════════════════════════════════
 
     /**

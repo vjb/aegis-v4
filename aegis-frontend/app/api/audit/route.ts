@@ -376,11 +376,11 @@ export async function GET(req: NextRequest) {
                     }
                 }
 
-                // JIT swap — ONLY when explicitly requested (auditOnly=false), never from the UI Oracle Feed
+                // Audited swap — ONLY when explicitly requested (auditOnly=false), never from the UI Oracle Feed
                 const isMock = /^0x0{38,}[0-9a-f]{1,2}$/i.test(targetAddress);
                 if (!auditOnly && extractedScore === 0 && !isMock) {
                     try {
-                        send({ type: 'phase', phase: `JIT: executing swap → ${amountArg} ETH for ${targetToken}` });
+                        send({ type: 'phase', phase: `Executing audited swap → ${amountArg} ETH for ${targetToken}` });
                         const swapHash = await walletClient.writeContract({
                             address: getAddress(moduleAddr),
                             abi: moduleAbi,

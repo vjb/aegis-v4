@@ -9,7 +9,7 @@ Demonstrates the end-to-end lifecycle on Base Sepolia:
   2. Scoped Agent Budgets (on-chain allowances)
   3. Intent-based Trading via Session Key UserOps (SmartSessions)
   4. LIVE Chainlink CRE AI Consensus Interception
-  5. The Final Execution (JIT Swap & Automated Revert)
+  5. The Final Execution (Audited Swap & Automated Revert)
 
 .EXAMPLE
 .\scripts\demo_v5_master.ps1 -Interactive
@@ -446,10 +446,10 @@ Write-Host "  ❌ MockHoneypot: Risk Code 36 → DENIED (ClearanceDenied)" -Fore
 Pause-Demo
 
 # ═══════════════════════════════════════════════════════════════════════
-#  ACT 5: THE EXECUTION — JIT Swaps & Automated Reverts
+#  ACT 5: THE EXECUTION — Audited Swaps & Automated Reverts
 # ═══════════════════════════════════════════════════════════════════════
 
-ActIntro -Title "ACT 5: JIT EXECUTION & AUTOMATED REVERTS" -Lines @(
+ActIntro -Title "ACT 5: AUDITED EXECUTION & AUTOMATED REVERTS" -Lines @(
     "Agent NOVA attempts to execute both swaps. The module",
     "checks isApproved(token) before allowing any capital",
     "movement:",
@@ -460,7 +460,7 @@ ActIntro -Title "ACT 5: JIT EXECUTION & AUTOMATED REVERTS" -Lines @(
     "Zero capital at risk. The AI firewall decides."
 ) -Prompt "Execute swaps — approved token vs blocked honeypot"
 
-Write-Host "`n[Act 5] The Execution: JIT Swaps & Automated Reverts" -ForegroundColor Yellow
+Write-Host "`n[Act 5] The Execution: Audited Swaps & Automated Reverts" -ForegroundColor Yellow
 Write-Host "Agent NOVA executes swaps via Session Key UserOps. Owner key NOT used." -ForegroundColor DarkGray
 
 # Wait for state propagation
@@ -603,7 +603,7 @@ Write-Host "  │ ✅ subscribeAgent  — Owner grants NOVA + CIPHER budgets  �
 Write-Host "  │ ✅ requestAudit    — Agent submits trade intents          │" -ForegroundColor Green
 Write-Host "  │ ✅ CRE Oracle      — GoPlus + BaseScan + GPT-4o + Llama  │" -ForegroundColor Green
 Write-Host "  │ ✅ onReportDirect  — Oracle delivers 8-bit risk verdict   │" -ForegroundColor Green
-Write-Host "  │ ✅ triggerSwap     — JIT swap executes for clean tokens   │" -ForegroundColor Green
+Write-Host "  │ ✅ triggerSwap     — Audited swap for AI-cleared tokens   │" -ForegroundColor Green
 Write-Host "  │ ❌ TokenNotCleared — Honeypot swap BLOCKED on-chain      │" -ForegroundColor Red
 Write-Host "  │ ✅ agentAllowances — Budget deducted after successful tx  │" -ForegroundColor Green
 Write-Host "  │ ✅ revokeAgent     — Owner kills REX access instantly     │" -ForegroundColor Green

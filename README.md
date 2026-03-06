@@ -37,7 +37,7 @@ AI trading bots are becoming mainstream. The problem? You have to hand over your
 - 💼 **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain ETH budget. Exceeding it reverts.
 - 🔑 **Session Keys:** Agent submits UserOps via ERC-7715 session key — owner's private key never used. ([proof](docs/sample_output/session_key_demo.txt))
 - 🛡️ **The AI Firewall:** Chainlink DON runs dual LLMs in parallel, forensically auditing target tokens for zero-day scams.
-- ⚡ **Just-In-Time Execution:** Cleared → swap executes atomically. Failed → `TokenNotCleared()` reverts. **Zero capital at risk.**
+- ⚡ **Per-Trade AI Clearance:** Cleared → swap executes. Failed → `TokenNotCleared()` reverts on-chain. **Zero capital at risk.**
 
 > **Testnet note:** On Base Sepolia, `triggerSwap` emits `SwapExecuted` but does not route through a real DEX (no liquidity). Production Uniswap V3 code is included in the contract, commented out. Budget enforcement and clearance checks are fully real.
 
@@ -180,7 +180,7 @@ cd aegis-frontend && npm run dev
 | `revokeAgent(addr)` | Owner | Instantly zero agent's budget |
 | `requestAudit(token)` | Owner/Agent | Submit trade intent → emits `AuditRequested` |
 | `onReport(bytes, bytes)` | KeystoneForwarder | Production CRE callback (demo uses `onReportDirect`) |
-| `triggerSwap(token, amount, minOut)` | Owner/Agent | JIT swap if token cleared + budget allows |
+| `triggerSwap(token, amount, minOut)` | Owner/Agent | Execute swap if token cleared by oracle + budget allows |
 | `setFirewallConfig(config)` | Owner | Set vault-wide AI firewall policy |
 | `withdrawETH(amount)` | Owner | Withdraw ETH to owner |
 
