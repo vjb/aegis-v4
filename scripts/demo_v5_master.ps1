@@ -307,8 +307,8 @@ ActIntro -Title "ACT 4: THE AI FIREWALL (LIVE CRE)" -Lines @(
     "The Chainlink DON detects AuditRequested events and",
     "triggers the WASM sandbox. Three analysis phases:",
     "",
-    "Phase 1: GoPlus API — static on-chain analysis",
-    "Phase 2: BaseScan — source code via ConfidentialHTTP",
+    "Phase 1: GoPlus API — mock for demo tokens (live for real)",
+    "Phase 2: BaseScan — mock for demo tokens (live for real)",
     "Phase 3: GPT-4o + Llama-3 — dual-model AI consensus",
     "",
     "Watch the raw CRE output stream in real time."
