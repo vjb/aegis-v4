@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bot, Plus, Trash2, TrendingUp, AlertTriangle, RefreshCw, Loader2, X, ChevronDown, Shield, Key, Lock, Unlock } from 'lucide-react';
 
-// ERC-7715 Session Key constants (from v5_session_config.ts)
-const SESSION_KEY_SCOPE = {
+// Agent allowance scope constants (from v5_session_config.ts)
+const AGENT_SCOPE = {
     selectors: [
         { name: 'requestAudit', sig: 'requestAudit(address)', selector: '0xe34eac65', description: 'Request a CRE oracle audit for a token' },
         { name: 'triggerSwap', sig: 'triggerSwap(address,uint256,uint256)', selector: '0x684bceb0', description: 'Execute a swap after CRE clearance' },
@@ -319,17 +319,17 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                         </div>
                     </div>
 
-                    {/* ERC-7715 Session Key Scope */}
+                    {/* Agent Allowance Scope */}
                     <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                         <div className="flex items-center gap-2 mb-3">
                             <Key className="w-3.5 h-3.5" style={{ color: 'var(--amber)' }} />
-                            <p className="mono text-xs font-semibold" style={{ color: 'var(--amber)' }}>ERC-7715 Session Key Scope</p>
+                            <p className="mono text-xs font-semibold" style={{ color: 'var(--amber)' }}>Agent Allowance Scope</p>
                         </div>
 
                         <div style={{ background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.1)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
                             <p className="mono text-xs mb-2" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10 }}>Permitted Functions</p>
                             <div className="space-y-2">
-                                {SESSION_KEY_SCOPE.selectors.map(s => (
+                                {AGENT_SCOPE.selectors.map(s => (
                                     <div key={s.name} className="flex items-center gap-2">
                                         <Unlock className="w-3 h-3" style={{ color: 'var(--green)' }} />
                                         <span className="mono text-xs" style={{ color: 'var(--green)' }}>{s.name}()</span>
@@ -342,7 +342,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                         <div style={{ background: 'rgba(248,113,113,0.04)', border: '1px solid rgba(248,113,113,0.1)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
                             <p className="mono text-xs mb-2" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10 }}>Blocked Functions</p>
                             <div className="space-y-1.5">
-                                {SESSION_KEY_SCOPE.blocked.map(b => (
+                                {AGENT_SCOPE.blocked.map(b => (
                                     <div key={b.name} className="flex items-center gap-2">
                                         <Lock className="w-3 h-3" style={{ color: 'var(--red)' }} />
                                         <span className="mono text-xs" style={{ color: 'var(--red)', opacity: 0.8 }}>{b.name}()</span>
@@ -354,7 +354,7 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
 
                         <div className="flex gap-4 mono text-xs" style={{ color: 'var(--text-subtle)' }}>
                             <span><Shield className="w-3 h-3 inline mr-1" style={{ color: 'var(--amber)' }} />Target: AegisModule</span>
-                            <span>Expiry: {SESSION_KEY_SCOPE.expiryHours}h</span>
+                            <span>Expiry: {AGENT_SCOPE.expiryHours}h</span>
                             <span>Budget: {newBudget.toFixed(3)} ETH</span>
                         </div>
                     </div>
@@ -441,16 +441,16 @@ export default function AgentsTab({ isKilled, onAudit }: { isKilled: boolean; on
                                     )}
                                 </div>
 
-                                {/* ERC-7715 Session Key Details */}
+                                {/* Agent Allowance Scope */}
                                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginBottom: 8 }}>
                                     <div className="flex items-center gap-1.5 mb-2">
                                         <Key className="w-3 h-3" style={{ color: agent.active ? 'var(--amber)' : 'var(--text-subtle)' }} />
                                         <span className="mono" style={{ fontSize: 10, color: agent.active ? 'var(--amber)' : 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                            Session Key {agent.active ? 'Active' : 'Revoked'}
+                                            Allowance {agent.active ? 'Active' : 'Revoked'}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
-                                        {SESSION_KEY_SCOPE.selectors.map(s => (
+                                        {AGENT_SCOPE.selectors.map(s => (
                                             <span key={s.name} className="mono" style={{
                                                 fontSize: 10,
                                                 padding: '2px 8px',

@@ -309,7 +309,7 @@ export async function POST(req: NextRequest) {
             new Promise<string>(resolve => setTimeout(() => resolve(buildDemoFallback()), 15000)),
         ]);
 
-        const systemPrompt = `You are AEGIS — the AI firewall of the Aegis Protocol V5. You are an autonomous smart contract security system running on Base Sepolia via Chainlink CRE (Chainlink Runtime Environment), installed as an ERC-7579 Executor Module on a Safe Smart Account with ERC-4337 Account Abstraction and ERC-7715 Session Keys.
+        const systemPrompt = `You are AEGIS — the AI firewall of the Aegis Protocol V5. You are an autonomous smart contract security system running on Base Sepolia via Chainlink CRE (Chainlink Runtime Environment), installed as an ERC-7579 Executor Module on a Safe Smart Account with ERC-4337 Account Abstraction.
 
 Your personality:
 - Precise, clinical, and protective — like an institutional-grade security system with a personality
