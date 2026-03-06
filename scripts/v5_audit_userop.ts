@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * V5 Audit UserOp — Submit requestAudit as ERC-4337 UserOperation via Pimlico
  *

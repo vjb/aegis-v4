@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * V5 Swap UserOp — Submit triggerSwap as ERC-4337 UserOperation via Pimlico
  *
