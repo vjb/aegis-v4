@@ -61,9 +61,9 @@ Every item below is a **platform or infrastructure limitation**, not missing cod
 
 | What we do | What production looks like |
 |---|---|
-| Owner calls `onReportDirect(tradeId, riskScore)` | KeystoneForwarder delivers the report automatically |
+| Owner calls `onReportDirect(tradeId, riskScore)` | KeystoneForwarder delivers DON-signed report automatically |
 
-**Why:** KeystoneForwarder is part of the CRE production deployment infrastructure (see item 1). In the demo, the owner relays the exact same `(tradeId, riskScore)` payload that the CRE WASM sandbox computed.
+**Why:** KeystoneForwarder is part of the CRE production deployment infrastructure (see item 1). In the demo, the owner relays the exact same `(tradeId, riskScore)` payload that the CRE WASM sandbox computed. In production, the report would be cryptographically signed by the DON — the contract's `onReport(bytes, bytes)` function is already built for this.
 
 **What this means:** The data is real. Only the delivery mechanism changes in production.
 
@@ -77,6 +77,25 @@ Every item below is a **platform or infrastructure limitation**, not missing cod
 
 **What this means:** Zero code changes needed for real tokens.
 
+### 6. Clearance Is a Simple Boolean Gate
+
+| What we do | What production would add |
+|---|---|
+| `isApproved[token]` — a `mapping(address => bool)` | TTL expiry, amount binding, tradeId linkage |
+
+**How the clearance mechanism works today:**
+1. Agent calls `requestAudit(token)` — emits event, oracle runs
+2. Oracle callback sets `isApproved[token] = true` (if riskScore == 0)
+3. Agent calls `triggerSwap(token, amount, minOut)` — checks `isApproved[token]`
+4. Clearance is consumed (set to `false`) after one swap — anti-replay via CEI pattern
+
+**What this doesn't have (yet):**
+- No TTL — clearance persists until consumed (production would add an expiry timestamp)
+- No amount binding — the audit is per-token, not per-amount. Budget enforcement limits the amount separately
+- No tradeId linkage — `triggerSwap` doesn't reference the specific audit that cleared it
+
+**Why this is fine for a hackathon:** The pattern is correct — oracle sets clearance, contract enforces it, agent can't bypass it. The bindings above are refinements for production hardening, not architectural changes.
+
 ---
 
 ## The Bottom Line
@@ -89,5 +108,6 @@ Everything that isn't fully live is blocked by **external gates** — not missin
 | Rhinestone attestation | Rhinestone Registry | Module built and verified |
 | DEX liquidity | Market | Swap code in contract, commented for testnet |
 | KeystoneForwarder | Chainlink CRE infra | Same payload, different delivery |
+| Clearance hardening | Us (production feature) | Pattern works, bindings are refinement |
 
 **No functionality is faked. No results are fabricated. Every on-chain transaction is verifiable on [BaseScan](https://sepolia.basescan.org/address/0x23EfaEF29EcC0e6CE313F0eEd3d5dA7E0f5Bcd89).**
