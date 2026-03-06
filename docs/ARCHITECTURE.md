@@ -102,13 +102,15 @@ sequenceDiagram
     participant Bot as 🤖 AI Agent
     participant Bundler as 📦 Pimlico Bundler
     participant EP as 🔗 EntryPoint v0.7
+    participant Sessions as 🔑 SmartSessions
     participant Safe as 💰 Smart Account
     participant AM as 🛡️ AegisModule
     participant CRE as 🔮 CRE DON
 
-    Bot->>Bundler: UserOp { callData: requestAudit(BRETT) }
+    Bot->>Bundler: UserOp signed with SESSION KEY
     Bundler->>EP: handleOps
-    EP->>Safe: validateUserOp ✓
+    EP->>Sessions: validateUserOp (scoped permissions)
+    Sessions->>Safe: execute
     Safe->>AM: requestAudit(BRETT)
     AM-->>CRE: emit AuditRequested
 
@@ -117,8 +119,10 @@ sequenceDiagram
     Note over AM: Owner calls onReportDirect(id, 0)
     AM->>AM: isApproved[BRETT] = true
 
-    Bot->>Bundler: UserOp { callData: triggerSwap(BRETT, 0.01 ETH) }
+    Bot->>Bundler: UserOp signed with SESSION KEY
     Bundler->>EP: handleOps
+    EP->>Sessions: validateUserOp (scoped permissions)
+    Sessions->>Safe: execute
     Safe->>AM: triggerSwap
     AM->>AM: check allowance ✓ · deduct budget · consume clearance (CEI)
     AM-->>AM: SwapExecuted event (simulated on testnet)

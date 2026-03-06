@@ -42,7 +42,7 @@
 |---|---|
 | `cre simulate` execution | `docker exec cre workflow simulate` with real Base Sepolia tx |
 | On-chain write on CRE-supported testnet | `requestAudit()` + `onReportDirect()` + `triggerSwap()` on Base Sepolia |
-| Agent-driven execution | AI agent submits UserOps via Pimlico bundler; `onReportDirect` is owner-relayed (production: KeystoneForwarder) |
+| Agent-driven execution | AI agent submits UserOps via **session key** through Pimlico bundler; `onReportDirect` is owner-relayed (production: KeystoneForwarder) |
 | Session key autonomy | Agent submits `requestAudit()` UserOp using ONLY an ERC-7579 session key — owner key not used | [`session_key_demo.txt`](sample_output/session_key_demo.txt) |
 | BYOA (Bring Your Own Agent) | Any external agent can be subscribed via `subscribeAgent(address, uint256)` |
 
@@ -72,7 +72,7 @@
 | Contract | Address | Verified |
 |---|---|---|
 | **AegisModule** (ERC-7579) | [`0x23EfaEF29EcC0e6CE313F0eEd3d5dA7E0f5Bcd89`](https://sepolia.basescan.org/address/0x23efaef29ecc0e6ce313f0eed3d5da7e0f5bcd89#code) | ✅ BaseScan |
-| **Safe + SmartSessionValidator** | [`0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14`](https://sepolia.basescan.org/address/0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14) | ✅ ERC-7579 |
+| **Safe + SmartSessions** | [`0xb9ff55a887727AeF9C56e7b76101693226eA9a91`](https://sepolia.basescan.org/address/0xb9ff55a887727AeF9C56e7b76101693226eA9a91) | ✅ Session Keys |
 | MockBRETT | [`0x46d40e0abda0814bb0cb323b2bb85a129d00b0ac`](https://sepolia.basescan.org/address/0x46d40e0abda0814bb0cb323b2bb85a129d00b0ac) | Deployed |
 | MockHoneypot | [`0xf672c8fc888b98db5c9662d26e657417a3c453b5`](https://sepolia.basescan.org/address/0xf672c8fc888b98db5c9662d26e657417a3c453b5) | Deployed |
 | **MaliciousRugToken** | [`0x99900d61f42bA57A8C3DA5b4d763f0F2Dc51E2B3`](https://sepolia.basescan.org/address/0x99900d61f42bA57A8C3DA5b4d763f0F2Dc51E2B3) | Deployed (unverified) |
@@ -84,12 +84,12 @@
 | Standard | Implementation | Evidence |
 |---|---|---|
 | **ERC-7579** | AegisModule implements Executor interface | `src/AegisModule.sol` — inherits `ERC7579ExecutorBase`, implements `onInstall`, `onUninstall`, `isModuleType` |
-| **ERC-4337** | Smart Account via Safe | UserOps relayed through Pimlico bundler |
+| **ERC-4337** | Smart Account via Safe | UserOps signed with session key, relayed through Pimlico bundler |
 
 
 | Layer | Standard | On-Chain? | What's Real | What's Simulated |
 |---|---|---|---|---|
-| **Wallet** | ERC-4337 | ✅ | Safe Smart Account + Pimlico Bundler | All `requestAudit` + `triggerSwap` via ERC-4337 UserOps in master demo |
+| **Wallet** | ERC-4337 | ✅ | Safe Smart Account + Pimlico Bundler + SmartSessions | All `requestAudit` + `triggerSwap` via **session key** UserOps — owner key NOT used |
 | **Module** | ERC-7579 | ✅ | Contract implements full ERC-7579 executor interface | Deployed standalone for demo (not installed on Safe via `installModule`) |
 
 

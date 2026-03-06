@@ -1,6 +1,6 @@
 # 🛡️ Aegis Protocol V5: The Institutional AI Firewall
 
-> **ERC-7579 Executor Module · Chainlink CRE Oracle · ERC-4337 Account Abstraction**
+> **ERC-7579 Executor Module · ERC-7579 SmartSessions · Chainlink CRE Oracle · ERC-4337 Account Abstraction**
 >
 > *Aegis is a zero-custody AI security firewall that installs onto your Smart Account and mathematically constrains what an autonomous AI agent can do with your capital.*
 
@@ -8,6 +8,7 @@
 
 [![CRE](https://img.shields.io/badge/chainlink%20CRE-simulated%20on%20Base%20Sepolia-blue)](cre-node/)
 [![ERC-7579](https://img.shields.io/badge/ERC--7579-executor-orange)](src/AegisModule.sol)
+[![Session Keys](https://img.shields.io/badge/session%20keys-SmartSessions-gold)](scripts/v5_session_utils.ts)
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Pimlico%20bundler-purple)](scripts/v5_e2e_mock.ts)
 [![Tests](https://img.shields.io/badge/tests-all%20passing-brightgreen)](test/)
 
@@ -18,7 +19,7 @@
 | Contract | Address | Status |
 |---|---|---|
 | **AegisModule** (ERC-7579 Executor) | [`0x23EfaEF29EcC0e6CE313F0eEd3d5dA7E0f5Bcd89`](https://sepolia.basescan.org/address/0x23efaef29ecc0e6ce313f0eed3d5da7e0f5bcd89#code) | ✅ Verified |
-| **Safe + SmartSessionValidator** | [`0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14`](https://sepolia.basescan.org/address/0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14) | ✅ Validator Installed |
+| **Safe + SmartSessions** | [`0xb9ff55a887727AeF9C56e7b76101693226eA9a91`](https://sepolia.basescan.org/address/0xb9ff55a887727AeF9C56e7b76101693226eA9a91) | ✅ Session Keys Active |
 
 > **Owner:** [`0x109D8072B1762263ed094BC05c5110895Adc65Cf`](https://sepolia.basescan.org/address/0x109D8072B1762263ed094BC05c5110895Adc65Cf)
 
@@ -48,7 +49,8 @@ AI trading bots are becoming mainstream. The problem? You have to hand over your
 sequenceDiagram
     participant Owner as 👤 Capital Allocator
     participant Module as 🛡️ AegisModule.sol<br/>(ERC-7579 Executor)
-    participant Agent as 🤖 Subscribed Agent<br/>(On-Chain Allowance)
+    participant Sessions as 🔑 SmartSessions<br/>(ERC-7579 Validator)
+    participant Agent as 🤖 Subscribed Agent<br/>(Session Key Holder)
     participant Bundler as 📦 Pimlico Bundler
     participant Node as 🔮 Chainlink CRE DON
     participant Enclave as 🔒 ConfidentialHTTPClient
@@ -60,8 +62,9 @@ sequenceDiagram
     
     Note over Agent: Agent detects alpha opportunity
 
-    Agent->>Bundler: UserOp { callData: requestAudit(BRETT) }
-    Bundler->>Module: handleOps → execute → requestAudit(BRETT)
+    Agent->>Bundler: UserOp signed with SESSION KEY
+    Bundler->>Sessions: validateUserOp (session permissions)
+    Sessions->>Module: execute → requestAudit(BRETT)
     Module-->>Node: AuditRequested event intercepted by CRE DON
 
     par Confidential Multi-Model AI Audit 🔒
@@ -78,8 +81,8 @@ sequenceDiagram
 
     alt riskCode = 0 (ALL CLEAR ✅)
         Node->>Module: onReportDirect(tradeId, 0)
-        Agent->>Bundler: UserOp { callData: triggerSwap(BRETT, 0.01 ETH) }
-        Bundler->>Module: handleOps → triggerSwap ✅
+        Agent->>Bundler: UserOp signed with SESSION KEY
+        Bundler->>Sessions: validateUserOp → triggerSwap ✅
     else riskCode > 0 (BLOCKED 🔴)
         Node->>Module: onReportDirect(tradeId, 36)
         Note over Module: triggerSwap() reverts: TokenNotCleared()
@@ -138,7 +141,8 @@ The oracle uses a bitwise **"Union of Fears"** — if *either* AI model flags a 
 | [`aegis-frontend/app/api/audit/route.ts`](aegis-frontend/app/api/audit/route.ts) | Frontend API: full CRE pipeline + `onReportDirect()` |
 | [`aegis-frontend/app/components/OracleFeed.tsx`](aegis-frontend/app/components/OracleFeed.tsx) | UI: SSE stream consumer for live CRE output |
 | [`scripts/demo_v5_cre.ps1`](scripts/demo_v5_cre.ps1) | CRE demo script |
-| [`scripts/demo_v5_master.ps1`](scripts/demo_v5_master.ps1) | Full E2E demo |
+| [`scripts/demo_v5_master.ps1`](scripts/demo_v5_master.ps1) | Full E2E demo (session key UserOps) |
+| [`scripts/v5_session_utils.ts`](scripts/v5_session_utils.ts) | Session key utility — Safe creation with SmartSessions, scoped agent permissions |
 
 ---
 
@@ -152,7 +156,7 @@ pnpm install
 forge test --match-contract AegisModuleTest -vv && pnpm exec jest
 
 # 3. Configure
-cp .env.example .env   # Fill: PRIVATE_KEY, PIMLICO_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, BASESCAN_API_KEY
+cp .env.example .env   # Fill: PRIVATE_KEY, AGENT_PRIVATE_KEY, PIMLICO_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, BASESCAN_API_KEY
 
 # 4. Launch CRE Oracle
 docker compose up --build -d
