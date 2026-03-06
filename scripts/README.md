@@ -43,7 +43,7 @@ All three cinematic scripts accept `-Interactive` for paused narration (for Loom
 
 ## `v5_setup_safe.ts` — Safe Account Deployment
 
-Deploys a Safe Smart Account on Base Sepolia with AegisModule installed as ERC-7579 Executor.
+Deploys a Safe Smart Account on Base Sepolia with SmartSessionValidator. AegisModule (ERC-7579 Executor) is deployed separately.
 
 ```bash
 pnpm ts-node --transpile-only scripts/v5_setup_safe.ts

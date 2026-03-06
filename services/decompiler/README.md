@@ -29,9 +29,11 @@ curl -X POST http://localhost:8080/decompile \
 
 ## Architecture
 
+> **Note:** This diagram shows the intended integration path. Currently, Heimdall runs as a standalone experimental demo — it is not wired into the live CRE oracle.
+
 ```
 ┌─────────────────────────────────────┐
-│  Aegis CRE Oracle                   │
+│  Aegis CRE Oracle (future)          │
 │  ┌───────────────────────────────┐  │
 │  │ BaseScan: verified source?    │  │
 │  │   YES → read Solidity → AI   │  │
@@ -44,7 +46,7 @@ curl -X POST http://localhost:8080/decompile \
                                       │ → pseudocode │
                                       └──────┬───────┘
                                              ▼
-                                        GPT-4o / Llama-3
+                                        GPT-4o
                                         AI risk analysis
 ```
 

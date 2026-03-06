@@ -17,7 +17,7 @@ flowchart TD
     F --> |"ConfidentialHTTPClient"| H["Llama-3\nindependent verification"]
     G --> I["Union of Fears\nblocked if EITHER flags risk"]
     H --> I
-    I --> J(["onReport\nriskScore → AegisModule"])
+    I --> J(["onReportDirect\nriskScore → AegisModule"])
 
     style A fill:#fff3e0,stroke:#e65100,color:#bf360c
     style B fill:#fffde7,stroke:#f9a825,color:#f57f17
