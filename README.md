@@ -6,8 +6,8 @@
 
 **Convergence Hackathon Tracks:** Risk & Compliance · CRE & AI · DeFi & Tokenization · Privacy · Autonomous Agents
 
-[![Forge Tests](https://img.shields.io/badge/forge%20tests-21%20passing-brightgreen)](test/AegisModule.t.sol)
-[![Jest Tests](https://img.shields.io/badge/jest%20tests-99%20passing-brightgreen)](test/)
+[![Forge Tests](https://img.shields.io/badge/forge%20tests-18%20passing-brightgreen)](test/AegisModule.t.sol)
+[![Jest Tests](https://img.shields.io/badge/jest%20tests-95%20passing-brightgreen)](test/)
 [![CRE Live](https://img.shields.io/badge/chainlink%20CRE-live%20on%20Base%20Sepolia-blue)](cre-node/)
 [![ERC-7579](https://img.shields.io/badge/ERC--7579-executor-orange)](src/AegisModule.sol)
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Pimlico%20bundler-purple)](scripts/v5_e2e_mock.ts)
@@ -126,22 +126,11 @@ sequenceDiagram
 
 ---
 
-## 🖥️ Frontend Dashboard
+## 🖥️ Agentic Command Center
 
-Aegis ships with a **Next.js 3-panel command center** that lets you manage agents, configure the firewall, trigger live oracle audits, and monitor results in real time.
+Next.js 3-panel dashboard: **Agents / Firewall / Marketplace** (left), **AI Chat** (center), **Oracle Feed** (right). Manage agents, toggle 8-bit risk toggles, trigger audits via chat ("audit BRETT"), and watch live SSE oracle output. Includes a one-click **Kill Switch** that halts all agentic outflow.
 
-| Panel | Purpose |
-|---|---|
-| **Left — Agents / Firewall / Marketplace** | Manage subscribed agents (subscribe, revoke, trade), toggle 8-bit firewall risk toggles, browse pre-built trading strategies |
-| **Center — AI Chat** | Natural language interface to query treasury balance, list agents, or trigger audits ("audit BRETT") |
-| **Right — Oracle Feed** | Real-time SSE stream showing GoPlus → BaseScan → GPT-4o → Llama-3 → Verdict with on-chain explorer links |
-
-**Key Features:**
-- 🔴 **Kill Switch** — one-click protocol lock that halts all agentic outflow and severs Smart Account connections
-- 🎯 **Drag-to-Resize** — adjustable panel widths for any screen size
-- 🏪 **Agent Marketplace** — 5 pre-built strategies (BLUECHIP, YIELD, DEGEN, SAFE, HEIMDALL) with color-coded risk badges
-
-> **UI Test Matrix:** [`docs/UI_TEST_MATRIX.md`](docs/UI_TEST_MATRIX.md) — 50 automated test cases across 10 categories
+> See [`aegis-frontend/README.md`](aegis-frontend/README.md) for setup and [`docs/UI_TEST_MATRIX.md`](docs/UI_TEST_MATRIX.md) for 50 automated UI test cases.
 
 ---
 
@@ -152,9 +141,9 @@ Your capital lives in a **Safe Smart Account** with the **AegisModule** installe
 
 ### Step 2 — The Intent (Chainlink CRE)
 When an agent spots a trade opportunity, it calls `requestAudit(token)`. The Chainlink CRE DON intercepts the event and runs a multi-phase AI audit inside a WASM sandbox:
-- **GoPlus** — static on-chain security flags (honeypot, sell restriction, proxy)
-- **BaseScan** — source code retrieval via `ConfidentialHTTPClient`
-- **GPT-4o + Llama-3** — dual-model forensic consensus producing an 8-bit risk verdict
+- **GoPlus** — on-chain security flags (mock for demo tokens, live API for real tokens)
+- **BaseScan** — source code retrieval via `ConfidentialHTTPClient` (mock for demo tokens, live for real)
+- **GPT-4o + Llama-3** — dual-model forensic consensus producing an 8-bit risk verdict (always live)
 
 ### Step 3 — The Execution (or Hard Block)
 - `riskCode == 0` → `triggerSwap()` is unblocked. Capital moves atomically in a single transaction.
@@ -244,8 +233,8 @@ Raw Chainlink CRE WASM execution for CRE & AI judges. No frontend, no abstractio
 
 | File | What It Shows |
 |---|---|
-| [`forge_tests.txt`](docs/sample_output/forge_tests.txt) | 21 Solidity tests passing |
-| [`jest_tests.txt`](docs/sample_output/jest_tests.txt) | 92 TypeScript tests passing across 8 suites |
+| [`forge_tests.txt`](docs/sample_output/forge_tests.txt) | 18 Solidity tests passing |
+| [`jest_tests.txt`](docs/sample_output/jest_tests.txt) | 95 TypeScript tests passing across 8 suites |
 | [`demo_v5_setup_run.txt`](docs/sample_output/demo_v5_setup_run.txt) | Infrastructure boot |
 | [`demo_v5_master_run.txt`](docs/sample_output/demo_v5_master_run.txt) | Full 7-act lifecycle with live CRE AI |
 | [`demo_v5_cre_run.txt`](docs/sample_output/demo_v5_cre_run.txt) | Raw CRE WASM execution |
@@ -269,13 +258,13 @@ pnpm install
 ### 2. Run smart contract tests
 ```bash
 forge test --match-contract AegisModuleTest -vv
-# Expected: 21 passed, 0 failed
+# Expected: 18 passed, 0 failed
 ```
 
 ### 3. Run TypeScript tests
 ```bash
 pnpm exec jest
-# Expected: 92 passed, 1 skipped
+# Expected: 95 passed, 1 skipped
 ```
 
 ### 4. Configure Environment
@@ -347,33 +336,11 @@ Every on-chain transaction maps to one of these functions on [`AegisModule.sol`]
 ---
 
 
-
----
-
-## 🖥️ Agentic Command Center (`/aegis-frontend`)
-
-A split-stream dashboard where the human monitors their fleet:
-
-| Tab | Function |
-|---|---|
-| **Agents** | Subscribe/revoke agents, budget bars, quick-audit trigger |
-| **Firewall** | 8-bit risk toggle matrix + threshold sliders |
-| **Audit Log** | On-chain event log with filter + decoded risk bits |
-| **Marketplace** | Preset agent strategies with Deploy button |
-| **Oracle Feed** | Always-visible SSE stream: GoPlus → AI → verdict |
-
-```powershell
-cd aegis-frontend
-npm install
-npm run dev
-# http://localhost:3000
-```
-
 ---
 
 ## 🏗️ Architecture
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 Mermaid diagrams.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 7 Mermaid diagrams.
 
 | Layer | Technology | Role |
 |---|---|---|
@@ -392,7 +359,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full deep-dive with 12 
 | `/src` | Solidity source — [`AegisModule.sol`](src/AegisModule.sol) (ERC-7579 Executor) |
 | `/cre-node` | Chainlink CRE workflow — [`aegis-oracle.ts`](cre-node/aegis-oracle.ts), `workflow.yaml` |
 | `/scripts` | Demo scripts, AA config modules, E2E mock test |
-| `/test` | Forge + Jest test suites (21 + 99 = 120 core tests) |
+| `/test` | Forge + Jest test suites (18 + 95 = 113 core tests) |
 | `/aegis-frontend` | Next.js Agentic Command Center — chat, oracle feed, firewall UI |
 | `/docs` | Architecture, Confidential HTTP, Demo Guide, sample outputs |
 | `/script` | Foundry deployment scripts (`DeployMocks.s.sol`) |
