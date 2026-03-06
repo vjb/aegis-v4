@@ -31,6 +31,6 @@ The core smart contract — an ERC-7579 Type-2 Executor Module that installs ont
 
 ### Test Coverage
 
-21 Forge tests in [`test/AegisModule.t.sol`](../test/AegisModule.t.sol) — see [`docs/sample_output/forge_tests.txt`](../docs/sample_output/forge_tests.txt) for output.
+18 Forge tests in [`test/AegisModule.t.sol`](../test/AegisModule.t.sol) — see [`docs/sample_output/forge_tests.txt`](../docs/sample_output/forge_tests.txt) for output.
 
 See [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) for the full system architecture with Mermaid diagrams.

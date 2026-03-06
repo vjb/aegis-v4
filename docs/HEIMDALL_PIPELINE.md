@@ -86,10 +86,12 @@ The demo script targets `MaliciousRugToken` (`0x99900d61...`) — a purpose-buil
 | Feature | Heimdall Pipeline | Third-Party APIs |
 |---|---|---|
 | **Runs locally** | ✅ Docker container | ❌ External service |
-| **No API keys needed** | ✅ Zero dependencies | ❌ Requires authentication |
-| **No rate limits** | ✅ Unlimited | ❌ Cloudflare blocks |
+| **No API keys for decompilation** | ✅ Heimdall is self-hosted | ❌ Requires authentication |
+| **No rate limits on decompile** | ✅ Unlimited | ❌ Cloudflare blocks |
 | **Confidential** | ✅ Bytecode stays local | ❌ Sent to third party |
 | **Speed** | ~2 seconds typical | Variable |
+
+> **Note:** The full pipeline requires Docker (for Heimdall) and an OpenAI API key (for GPT-4o analysis).
 
 ## Running It
 
@@ -119,7 +121,7 @@ curl http://localhost:8080/health
 
 > **Sample output:** [`sample_output/demo_v5_heimdall_run.txt`](sample_output/demo_v5_heimdall_run.txt)
 
-### Live Integration Tests (6/6 passing)
+### Live Integration Tests
 
 ```bash
 npx jest test/cre/HeimdallLive.spec.ts

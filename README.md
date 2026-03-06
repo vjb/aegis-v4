@@ -18,7 +18,7 @@
 | Contract | Address | Status |
 |---|---|---|
 | **AegisModule** (ERC-7579 Executor) | [`0x23EfaEF29EcC0e6CE313F0eEd3d5dA7E0f5Bcd89`](https://sepolia.basescan.org/address/0x23efaef29ecc0e6ce313f0eed3d5da7e0f5bcd89#code) | ✅ Verified |
-| **Safe + SmartSessionValidator** | [`0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14`](https://sepolia.basescan.org/address/0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14) | ✅ ERC-7579 Installed |
+| **Safe + SmartSessionValidator** | [`0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14`](https://sepolia.basescan.org/address/0xC006bfc3Cac01634168e9cD0a1fEbD4Ffb816e14) | ✅ Validator Installed |
 
 > **Owner:** [`0x109D8072B1762263ed094BC05c5110895Adc65Cf`](https://sepolia.basescan.org/address/0x109D8072B1762263ed094BC05c5110895Adc65Cf)
 
@@ -33,7 +33,7 @@ AI trading bots are becoming mainstream. The problem? You have to hand over your
 ### How it works:
 
 - 🔐 **You Keep the Keys:** Capital lives in a Safe Smart Account. You retain absolute custody.
-- 💼 **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain allowance scoped to `requestAudit()` and `triggerSwap()`.
+- 💼 **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain ETH budget. Exceeding it reverts.
 - 🛡️ **The AI Firewall:** Chainlink DON runs dual LLMs in parallel, forensically auditing target tokens for zero-day scams.
 - ⚡ **Just-In-Time Execution:** Cleared → swap executes atomically. Failed → `TokenNotCleared()` reverts. **Zero capital at risk.**
 
@@ -87,7 +87,7 @@ sequenceDiagram
     Note over Owner: Owner can revokeAgent() at any time — budget zeroed instantly
 ```
 
-> For the full architecture with 7 Mermaid diagrams, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+> For the full architecture, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
