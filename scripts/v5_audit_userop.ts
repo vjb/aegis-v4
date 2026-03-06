@@ -106,7 +106,21 @@ async function main() {
         });
         await pimlicoClient.waitForUserOperationReceipt({ hash: deployHash });
         console.error(`DEPLOY: Safe deployed`);
+    }
 
+    // Always check agent allowance — re-subscribe if zero or low
+    const allowance = await publicClient.readContract({
+        address: moduleAddress,
+        abi: [{
+            name: "agentAllowances", type: "function", stateMutability: "view",
+            inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "uint256" }]
+        }] as const,
+        functionName: "agentAllowances",
+        args: [safeAccount.address],
+    });
+
+    if (allowance < BigInt("10000000000000000")) { // < 0.01 ETH
+        console.error(`SUBSCRIBE: Safe allowance is ${allowance}, re-subscribing with 0.05 ETH budget...`);
         const subHash = await walletClient.writeContract({
             address: moduleAddress,
             abi: AEGIS_MODULE_ABI,
@@ -114,7 +128,9 @@ async function main() {
             args: [safeAccount.address, BigInt("50000000000000000")],
         });
         await publicClient.waitForTransactionReceipt({ hash: subHash });
-        console.error(`DEPLOY: Safe subscribed as agent (0.05 ETH budget)`);
+        console.error(`SUBSCRIBE: Safe subscribed as agent (0.05 ETH budget)`);
+    } else {
+        console.error(`AGENT: Safe ${safeAccount.address} has allowance ${allowance} wei`);
     }
 
     // Submit requestAudit as UserOperation
