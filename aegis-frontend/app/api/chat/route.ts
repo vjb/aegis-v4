@@ -167,13 +167,10 @@ async function buildSystemContext(): Promise<string> {
             const fromEvent = agentLogs.some(l => ('0x' + (l.topics[1] as string).slice(-40)).toLowerCase() === addr);
             if (allowance <= BigInt(0) && !fromEvent) continue;
 
-            const gasBalance = await publicClient.getBalance({ address: getAddress(addr) }).catch(() => BigInt(0));
-
             const name = KNOWN_NAMES[addr] || addr.slice(0, 10) + '…';
             const remaining = (Number(allowance) / 1e18).toFixed(4);
-            const gas = (Number(gasBalance) / 1e18).toFixed(4);
             const status = allowance > BigInt(0) ? 'ACTIVE' : 'REVOKED (allowance exhausted/revoked)';
-            agentLines.push(`- ${name} (${addr.slice(0, 10)}…): ${status}, remaining allowance=${remaining} ETH, gas wallet=${gas} ETH`);
+            agentLines.push(`- ${name} (${addr.slice(0, 10)}…): ${status}, remaining allowance=${remaining} ETH`);
         }
 
         // ── Recent audit verdicts ─────────────────────────────────────────────
