@@ -91,9 +91,12 @@ stateDiagram-v2
     Blocked --> Denied : emit ClearanceDenied
     Approved --> Executed : triggerSwap() — isApproved consumed (CEI)
     Approved --> Reverted : second triggerSwap() — revert TokenNotCleared
+    Denied --> SimulationRevert : agent attempts triggerSwap
+    SimulationRevert --> Dropped : bundler simulation catches TokenNotCleared
     Executed --> [*]
     Denied --> [*]
     Reverted --> [*]
+    Dropped --> [*] : zero gas paid
 ```
 
 ---
@@ -119,16 +122,26 @@ sequenceDiagram
 
     Note over CRE: GoPlus + BaseScan + AI audit
 
-    Note over AM: Owner calls onReportDirect(id, 0)
-    AM->>AM: isApproved[BRETT] = true
+    alt riskCode = 0 (CLEARED ✅)
+        Note over AM: Owner calls onReportDirect(id, 0)
+        AM->>AM: isApproved[BRETT] = true
 
-    Bot->>Bundler: UserOp signed with SESSION KEY
-    Bundler->>EP: handleOps
-    EP->>Sessions: validateUserOp (scoped permissions)
-    Sessions->>Safe: execute
-    Safe->>AM: triggerSwap
-    AM->>AM: check allowance ✓ · deduct budget · consume clearance (CEI)
-    AM-->>AM: SwapExecuted event (simulated on testnet)
+        Bot->>Bundler: UserOp signed with SESSION KEY
+        Bundler->>Bundler: Simulate triggerSwap → SUCCESS ✅
+        Bundler->>EP: handleOps
+        EP->>Sessions: validateUserOp (scoped permissions)
+        Sessions->>Safe: execute
+        Safe->>AM: triggerSwap
+        AM->>AM: check allowance ✓ · deduct budget · consume clearance (CEI)
+        AM-->>AM: SwapExecuted event (simulated on testnet)
+    else riskCode > 0 (BLOCKED — ZERO GAS 🛡️)
+        Note over AM: Owner calls onReportDirect(id, 36)
+        AM->>AM: isApproved[BRETT] remains false
+
+        Bot->>Bundler: UserOp signed with SESSION KEY
+        Bundler->>Bundler: Simulate triggerSwap → REVERT TokenNotCleared
+        Note over Bundler: UserOp dropped from mempool<br/>Never submitted to EntryPoint<br/>Zero gas paid by user
+    end
 ```
 
 ---

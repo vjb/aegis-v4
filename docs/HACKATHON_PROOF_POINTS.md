@@ -53,6 +53,7 @@
 | Novel DeFi primitive | AI-Gated Smart Treasury — per-trade AI clearance, budget-enforced token execution |
 | CRE as DeFi orchestration layer | Multi-model AI audit governs per-token clearance for swap execution |
 | Live budget enforcement | ETH budget deductions are verifiable on-chain after `triggerSwap` (swap itself is simulated on testnet — no DEX liquidity) |
+| Zero-gas threat rejection | Blocked trades revert during Pimlico bundler simulation — UserOp is dropped before reaching the chain, zero gas paid. Security that **saves** money |
 
 ---
 
@@ -84,7 +85,7 @@
 | Standard | Implementation | Evidence |
 |---|---|---|
 | **ERC-7579** | AegisModule implements Executor interface | `src/AegisModule.sol` — inherits `ERC7579ExecutorBase`, implements `onInstall`, `onUninstall`, `isModuleType` |
-| **ERC-4337** | Smart Account via Safe | UserOps signed with session key, relayed through Pimlico bundler |
+| **ERC-4337** | Smart Account via Safe | UserOps signed with session key, relayed through Pimlico bundler. Blocked trades revert during simulation — zero gas paid |
 
 
 | Layer | Standard | On-Chain? | What's Real | What's Simulated |

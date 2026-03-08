@@ -28,6 +28,7 @@ The core smart contract — an ERC-7579 Type-2 Executor Module that acts as a ze
 - **Budget enforcement** — `agentAllowances` mapping, deducted before external calls (CEI)
 - **Anti-replay** — `isApproved` is reset to `false` after each swap
 - **Keystone guard** — `onReport` can only be called by the `keystoneForwarder` address
+- **Zero-gas revert** — blocked trades revert during bundler simulation; the UserOp never reaches the chain, zero gas paid
 
 ### Test Coverage
 

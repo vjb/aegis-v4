@@ -37,9 +37,13 @@ AI trading bots are becoming mainstream. The problem? You have to hand over your
 - **You Set the Limits:** `subscribeAgent(agent, budget)` grants an on-chain ETH budget. Exceeding it reverts.
 - **Session Keys:** Agent submits UserOps via ERC-7715 session key — owner's private key never used. ([on-chain tx](https://sepolia.basescan.org/tx/0xe1cae6043ad913f0d949b4551239c3b1de18f959c71fd107b1605256a2d1398d))
 - **The AI Firewall:** Chainlink DON runs dual LLMs in parallel, forensically auditing target tokens for zero-day scams.
-- **Per-Trade AI Clearance:** Cleared → swap executes. Failed → `TokenNotCleared()` reverts on-chain. **Zero capital at risk.**
+- **Per-Trade AI Clearance:** Cleared → swap executes. Failed → `TokenNotCleared()` reverts during bundler simulation — the transaction never reaches the blockchain and **zero gas is paid.**
 
 > **Testnet note:** On Base Sepolia, `triggerSwap` emits `SwapExecuted` but does not route through a real DEX (no liquidity). Production Uniswap V3 code is included in the contract, commented out. Budget enforcement and clearance checks are fully real.
+
+### The Economic Shield: Zero-Gas Threat Rejection
+
+Traditional smart contract firewalls still cost gas when they block a malicious trade — the blockchain performed computation to reject it, and someone has to pay. Aegis inverts this: because every agent action is an ERC-4337 UserOperation routed through a Pimlico bundler, the bundler **simulates the entire transaction off-chain** before submitting. When the firewall's `TokenNotCleared()` revert fires during simulation, Pimlico drops the UserOp from its mempool. No block space is consumed, no on-chain computation occurs, and the user pays nothing. The heaviest security check in the system — parallel AI consensus from two independent LLMs — acts as an invisible economic shield that **saves money every time it catches a threat.**
 
 ### Raw Output (no formatting — just facts)
 
@@ -89,11 +93,16 @@ sequenceDiagram
 
     alt riskCode = 0 (ALL CLEAR ✅)
         Node->>Module: onReportDirect(tradeId, 0)
+        Module->>Module: isApproved[token] = true
         Agent->>Bundler: UserOp signed with SESSION KEY
-        Bundler->>Sessions: validateUserOp → triggerSwap ✅
-    else riskCode > 0 (BLOCKED 🔴)
+        Bundler->>Bundler: Simulate triggerSwap → SUCCESS
+        Bundler->>Sessions: handleOps → validateUserOp → triggerSwap ✅
+    else riskCode > 0 (BLOCKED — ZERO GAS 🛡️)
         Node->>Module: onReportDirect(tradeId, 36)
-        Note over Module: triggerSwap() reverts: TokenNotCleared()
+        Module->>Module: isApproved[token] remains false
+        Agent->>Bundler: UserOp signed with SESSION KEY
+        Bundler->>Bundler: Simulate triggerSwap → REVERT TokenNotCleared
+        Note over Bundler: UserOp dropped from mempool<br/>Never hits the blockchain<br/>Zero gas paid by user
     end
     
     Note over Owner: Owner can revokeAgent() at any time — budget zeroed instantly
